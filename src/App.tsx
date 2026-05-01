@@ -1,10 +1,11 @@
 import { useState } from 'react';
-import { Layers, Scissors, FileType } from 'lucide-react';
+import { Layers, Scissors, FileType, Edit3 } from 'lucide-react';
 import { PDFMerger } from './components/PDFMerger';
 import { PDFSplitter } from './components/PDFSplitter';
+import { PDFEntry } from './components/PDFEntry';
 
 function App() {
-  const [activeTab, setActiveTab] = useState<'merge' | 'split'>('merge');
+  const [activeTab, setActiveTab] = useState<'merge' | 'split' | 'entry'>('merge');
 
   return (
     <div className="app-container">
@@ -29,11 +30,20 @@ function App() {
             <Scissors size={18} />
             Split PDF
           </button>
+          <button 
+            className={`nav-tab ${activeTab === 'entry' ? 'active' : ''}`}
+            onClick={() => setActiveTab('entry')}
+          >
+            <Edit3 size={18} />
+            PDF Entry
+          </button>
         </div>
       </header>
 
       <main>
-        {activeTab === 'merge' ? <PDFMerger /> : <PDFSplitter />}
+        {activeTab === 'merge' && <PDFMerger />}
+        {activeTab === 'split' && <PDFSplitter />}
+        {activeTab === 'entry' && <PDFEntry />}
       </main>
 
       <footer>
