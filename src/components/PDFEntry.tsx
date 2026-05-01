@@ -43,6 +43,7 @@ export const PDFEntry: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
+  const [originalPdfUrl, setOriginalPdfUrl] = useState<string | null>(null);
   
   // Templates state
   const [templates, setTemplates] = useState<SavedTemplate[]>([]);
@@ -166,6 +167,8 @@ export const PDFEntry: React.FC = () => {
     setCustomFields([]);
     setFileName(name);
     setPdfBytes(uint8Array);
+    if (originalPdfUrl) URL.revokeObjectURL(originalPdfUrl);
+    setOriginalPdfUrl(URL.createObjectURL(new Blob([uint8Array as any], { type: 'application/pdf' })));
     setIsProcessing(true);
     setIsVisualEditMode(false);
 
@@ -468,8 +471,9 @@ export const PDFEntry: React.FC = () => {
                  <Edit3 size={18} /> Click anywhere on the pages to add text
                </h3>
                
-               <Document
-                 file={{ data: pdfBytes }}
+               {originalPdfUrl && (
+                 <Document
+                   file={originalPdfUrl}
                  onLoadSuccess={({ numPages }) => setNumPages(numPages)}
                  loading={<div className="spinner"></div>}
                >
@@ -544,6 +548,7 @@ export const PDFEntry: React.FC = () => {
                    </div>
                  ))}
                </Document>
+               )}
              </div>
           )}
 
