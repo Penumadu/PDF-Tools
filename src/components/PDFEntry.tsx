@@ -1,7 +1,15 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { PDFDocument, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown } from 'pdf-lib';
+import { PDFDocument, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown, rgb } from 'pdf-lib';
 import { UploadCloud, File, Download, AlertCircle, CheckCircle, RefreshCw, Edit3, Bookmark, Trash2, FolderOpen } from 'lucide-react';
 import localforage from 'localforage';
+import { Document, Page, pdfjs } from 'react-pdf';
+import 'react-pdf/dist/Page/AnnotationLayer.css';
+import 'react-pdf/dist/Page/TextLayer.css';
+
+pdfjs.GlobalWorkerOptions.workerSrc = new URL(
+  'pdfjs-dist/build/pdf.worker.min.mjs',
+  import.meta.url,
+).toString();
 
 interface FormField {
   name: string;
@@ -17,8 +25,15 @@ interface SavedTemplate {
   createdAt: number;
 }
 
-export const PDFEntry: React.FC = () => {
+interface CustomTextField {
+  id: string;
+  pageIndex: number;
+  x: number; // percentage
+  y: number; // percentage
+  text: string;
+}
 
+export const PDFEntry: React.FC = () => {
   const [fileName, setFileName] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
@@ -33,6 +48,11 @@ export const PDFEntry: React.FC = () => {
   const [templates, setTemplates] = useState<SavedTemplate[]>([]);
   const [showSaveTemplate, setShowSaveTemplate] = useState(false);
   const [templateNameInput, setTemplateNameInput] = useState('');
+
+  // Visual Edit State (for non-fillable PDFs)
+  const [isVisualEditMode, setIsVisualEditMode] = useState(false);
+  const [numPages, setNumPages] = useState<number>(0);
+  const [customFields, setCustomFields] = useState<CustomTextField[]>([]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -143,9 +163,11 @@ export const PDFEntry: React.FC = () => {
     setSuccessMsg(null);
     setFields([]);
     setFieldValues({});
+    setCustomFields([]);
     setFileName(name);
     setPdfBytes(uint8Array);
     setIsProcessing(true);
+    setIsVisualEditMode(false);
 
     try {
       const pdfDoc = await PDFDocument.load(uint8Array);
@@ -153,7 +175,9 @@ export const PDFEntry: React.FC = () => {
       const formFields = form.getFields();
       
       if (formFields.length === 0) {
-        setError('No fillable form fields found in this PDF. Please upload a PDF with editable fields.');
+        // No acroform fields found. Switch to visual edit mode.
+        setIsVisualEditMode(true);
+        setSuccessMsg('No form fields found. Switched to Visual Edit Mode. Click anywhere on the PDF to add text.');
         setIsProcessing(false);
         return;
       }
@@ -207,6 +231,36 @@ export const PDFEntry: React.FC = () => {
     setFilledPdfUrl(null);
   };
 
+  const handlePageClick = (e: React.MouseEvent<HTMLDivElement>, pageIndex: number) => {
+    if (!isVisualEditMode) return;
+    
+    // Prevent adding if clicking on an existing input
+    if ((e.target as HTMLElement).tagName === 'INPUT') return;
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    const x = ((e.clientX - rect.left) / rect.width) * 100;
+    const y = ((e.clientY - rect.top) / rect.height) * 100;
+
+    const newField: CustomTextField = {
+      id: Math.random().toString(36).substring(7),
+      pageIndex,
+      x,
+      y,
+      text: ''
+    };
+
+    setCustomFields(prev => [...prev, newField]);
+    setFilledPdfUrl(null);
+  };
+
+  const updateCustomField = (id: string, text: string) => {
+    setCustomFields(prev => prev.map(f => f.id === id ? { ...f, text } : f));
+  };
+
+  const deleteCustomField = (id: string) => {
+    setCustomFields(prev => prev.filter(f => f.id !== id));
+  };
+
   const savePDF = async () => {
     if (!pdfBytes) return;
 
@@ -216,23 +270,43 @@ export const PDFEntry: React.FC = () => {
 
     try {
       const pdfDoc = await PDFDocument.load(pdfBytes);
-      const form = pdfDoc.getForm();
 
-      fields.forEach(f => {
-        const field = form.getField(f.name);
-        const val = fieldValues[f.name];
+      if (isVisualEditMode) {
+        // Draw custom fields
+        customFields.forEach(field => {
+          if (!field.text.trim()) return;
+          const page = pdfDoc.getPages()[field.pageIndex];
+          const { width, height } = page.getSize();
+          
+          const ptX = (field.x / 100) * width;
+          const ptY = height - ((field.y / 100) * height);
+          
+          page.drawText(field.text, {
+            x: ptX,
+            y: ptY - 12, // adjust for baseline
+            size: 14,
+            color: rgb(0, 0, 0)
+          });
+        });
+      } else {
+        // Fill form fields
+        const form = pdfDoc.getForm();
+        fields.forEach(f => {
+          const field = form.getField(f.name);
+          const val = fieldValues[f.name];
 
-        if (field instanceof PDFTextField) {
-          field.setText(val);
-        } else if (field instanceof PDFCheckBox) {
-          if (val) field.check();
-          else field.uncheck();
-        } else if (field instanceof PDFRadioGroup) {
-          if (val) field.select(val);
-        } else if (field instanceof PDFDropdown) {
-          if (val) field.select(val);
-        }
-      });
+          if (field instanceof PDFTextField) {
+            field.setText(val);
+          } else if (field instanceof PDFCheckBox) {
+            if (val) field.check();
+            else field.uncheck();
+          } else if (field instanceof PDFRadioGroup) {
+            if (val) field.select(val);
+          } else if (field instanceof PDFDropdown) {
+            if (val) field.select(val);
+          }
+        });
+      }
 
       const newPdfBytes = await pdfDoc.save();
       const blob = new Blob([newPdfBytes as any], { type: 'application/pdf' });
@@ -262,11 +336,13 @@ export const PDFEntry: React.FC = () => {
     setFileName('');
     setFields([]);
     setFieldValues({});
+    setCustomFields([]);
     setFilledPdfUrl(null);
     setSuccessMsg(null);
     setError(null);
     setPdfBytes(null);
     setShowSaveTemplate(false);
+    setIsVisualEditMode(false);
   };
 
   const formatFieldName = (name: string) => {
@@ -278,10 +354,10 @@ export const PDFEntry: React.FC = () => {
   };
 
   return (
-    <div className="tool-container">
+    <div className="tool-container" style={{ maxWidth: isVisualEditMode ? '100%' : '1200px' }}>
       <div className="tool-header">
         <h2 className="tool-title">PDF Entry & Templates</h2>
-        <p className="tool-subtitle">Upload a fillable PDF (like OREA Form 410), fill it out, and save it as a reusable template.</p>
+        <p className="tool-subtitle">Upload a fillable PDF to auto-fill fields, or upload a standard PDF to visually click and type text anywhere.</p>
       </div>
 
       {!pdfBytes ? (
@@ -294,7 +370,7 @@ export const PDFEntry: React.FC = () => {
             onClick={() => fileInputRef.current?.click()}
           >
             <UploadCloud className="dropzone-icon" size={48} />
-            <p className="dropzone-text">Click or drag a Fillable PDF here</p>
+            <p className="dropzone-text">Click or drag a PDF here</p>
             <p className="dropzone-subtext">Upload a new PDF to fill out or save as template</p>
             <input 
               type="file" 
@@ -340,7 +416,9 @@ export const PDFEntry: React.FC = () => {
               <File className="file-icon" size={24} />
               <div>
                 <div className="file-name">{fileName}</div>
-                <div className="file-size">{fields.length} editable fields found</div>
+                <div className="file-size">
+                  {isVisualEditMode ? 'Visual Edit Mode' : `${fields.length} editable fields found`}
+                </div>
               </div>
             </div>
             <div style={{ display: 'flex', gap: '0.5rem' }}>
@@ -383,7 +461,94 @@ export const PDFEntry: React.FC = () => {
             </div>
           )}
 
-          {fields.length > 0 && (
+          {/* VISUAL EDIT MODE FOR NON-FILLABLE PDFS */}
+          {isVisualEditMode && (
+             <div className="controls-panel" style={{ background: '#e2e8f0', color: '#0f172a', padding: '2rem', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+               <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                 <Edit3 size={18} /> Click anywhere on the pages to add text
+               </h3>
+               
+               <Document
+                 file={{ data: pdfBytes }}
+                 onLoadSuccess={({ numPages }) => setNumPages(numPages)}
+                 loading={<div className="spinner"></div>}
+               >
+                 {Array.from({ length: numPages }, (_, index) => (
+                   <div 
+                     key={`page_${index + 1}`} 
+                     style={{ position: 'relative', marginBottom: '2rem', boxShadow: '0 10px 25px rgba(0,0,0,0.1)' }}
+                     onClick={(e) => handlePageClick(e, index)}
+                   >
+                     <Page 
+                       pageNumber={index + 1} 
+                       renderTextLayer={false} 
+                       renderAnnotationLayer={false}
+                       width={800} // fixed width for consistency
+                     />
+                     
+                     {/* Render custom text fields for this page */}
+                     {customFields.filter(f => f.pageIndex === index).map(field => (
+                       <div 
+                         key={field.id}
+                         style={{
+                           position: 'absolute',
+                           left: `${field.x}%`,
+                           top: `${field.y}%`,
+                           transform: 'translate(0, -50%)',
+                           zIndex: 10
+                         }}
+                         onClick={e => e.stopPropagation()} // prevent adding new field when clicking existing
+                       >
+                         <input
+                           autoFocus
+                           type="text"
+                           value={field.text}
+                           onChange={e => updateCustomField(field.id, e.target.value)}
+                           style={{
+                             background: 'rgba(255, 255, 255, 0.9)',
+                             border: '2px solid var(--primary)',
+                             borderRadius: '4px',
+                             padding: '4px 8px',
+                             fontSize: '14px',
+                             color: 'black',
+                             outline: 'none',
+                             minWidth: '150px',
+                             boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                           }}
+                           placeholder="Type here..."
+                         />
+                         <button 
+                           onClick={() => deleteCustomField(field.id)}
+                           style={{
+                             position: 'absolute',
+                             right: '-24px',
+                             top: '50%',
+                             transform: 'translateY(-50%)',
+                             background: 'red',
+                             color: 'white',
+                             border: 'none',
+                             borderRadius: '50%',
+                             width: '20px',
+                             height: '20px',
+                             cursor: 'pointer',
+                             display: 'flex',
+                             alignItems: 'center',
+                             justifyContent: 'center',
+                             fontSize: '12px'
+                           }}
+                         >
+                           ×
+                         </button>
+                       </div>
+                     ))}
+                   </div>
+                 ))}
+               </Document>
+             </div>
+          )}
+
+          {/* ACROFORM EDIT MODE */}
+          {!isVisualEditMode && fields.length > 0 && (
             <div className="controls-panel" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
               <h3 style={{ marginBottom: '1rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
                 <Edit3 size={18} /> Edit Form Fields
@@ -451,13 +616,7 @@ export const PDFEntry: React.FC = () => {
             </div>
           )}
 
-          {fields.length === 0 && !error && (
-            <div className="controls-panel" style={{ textAlign: 'center', padding: '2rem' }}>
-              <p style={{ color: 'var(--text-muted)' }}>This PDF does not appear to have any fillable form fields.</p>
-            </div>
-          )}
-
-          {fields.length > 0 && !filledPdfUrl ? (
+          {(!isVisualEditMode ? fields.length > 0 : true) && !filledPdfUrl ? (
             <button 
               className="primary-btn" 
               onClick={savePDF}
