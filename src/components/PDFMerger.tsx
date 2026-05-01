@@ -111,7 +111,7 @@ export const PDFMerger: React.FC = () => {
       }
 
       const mergedPdfBytes = await mergedPdf.save();
-      const blob = new Blob([mergedPdfBytes], { type: 'application/pdf' });
+      const blob = new Blob([mergedPdfBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       
       setMergedPdfUrl(url);

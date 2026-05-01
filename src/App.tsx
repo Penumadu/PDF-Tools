@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { Layers, Scissors, FileType } from 'lucide-react';
 import { PDFMerger } from './components/PDFMerger';
 import { PDFSplitter } from './components/PDFSplitter';

@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { PDFDocument } from 'pdf-lib';
 import { UploadCloud, File, Scissors, Download, AlertCircle, CheckCircle, RefreshCw } from 'lucide-react';
 
@@ -153,7 +153,7 @@ export const PDFSplitter: React.FC = () => {
       copiedPages.forEach(page => newPdf.addPage(page));
 
       const newPdfBytes = await newPdf.save();
-      const blob = new Blob([newPdfBytes], { type: 'application/pdf' });
+      const blob = new Blob([newPdfBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
       
       setSplitPdfUrl(url);
