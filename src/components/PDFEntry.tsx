@@ -1,6 +1,7 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, PDFTextField, PDFCheckBox, PDFRadioGroup, PDFDropdown } from 'pdf-lib';
-import { UploadCloud, File, Download, AlertCircle, CheckCircle, RefreshCw, Edit3 } from 'lucide-react';
+import { UploadCloud, File, Download, AlertCircle, CheckCircle, RefreshCw, Edit3, Bookmark, Trash2, FolderOpen } from 'lucide-react';
+import localforage from 'localforage';
 
 interface FormField {
   name: string;
@@ -9,8 +10,16 @@ interface FormField {
   options?: string[];
 }
 
+interface SavedTemplate {
+  id: string;
+  name: string;
+  data: Uint8Array;
+  createdAt: number;
+}
+
 export const PDFEntry: React.FC = () => {
-  const [file, setFile] = useState<File | null>(null);
+
+  const [fileName, setFileName] = useState<string>('');
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [fields, setFields] = useState<FormField[]>([]);
@@ -20,7 +29,69 @@ export const PDFEntry: React.FC = () => {
   const [successMsg, setSuccessMsg] = useState<string | null>(null);
   const [pdfBytes, setPdfBytes] = useState<Uint8Array | null>(null);
   
+  // Templates state
+  const [templates, setTemplates] = useState<SavedTemplate[]>([]);
+  const [showSaveTemplate, setShowSaveTemplate] = useState(false);
+  const [templateNameInput, setTemplateNameInput] = useState('');
+
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    loadTemplates();
+  }, []);
+
+  const loadTemplates = async () => {
+    try {
+      const saved = await localforage.getItem<SavedTemplate[]>('pdf_templates');
+      if (saved) {
+        setTemplates(saved);
+      }
+    } catch (err) {
+      console.error('Failed to load templates', err);
+    }
+  };
+
+  const saveTemplateToDb = async () => {
+    if (!pdfBytes || !templateNameInput.trim()) return;
+    
+    try {
+      const newTemplate: SavedTemplate = {
+        id: Math.random().toString(36).substring(7),
+        name: templateNameInput.trim(),
+        data: pdfBytes,
+        createdAt: Date.now()
+      };
+      
+      const updatedTemplates = [...templates, newTemplate];
+      await localforage.setItem('pdf_templates', updatedTemplates);
+      setTemplates(updatedTemplates);
+      setShowSaveTemplate(false);
+      setSuccessMsg(`Template "${newTemplate.name}" saved successfully!`);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to save template. It might be too large.');
+    }
+  };
+
+  const deleteTemplate = async (id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    try {
+      const updatedTemplates = templates.filter(t => t.id !== id);
+      await localforage.setItem('pdf_templates', updatedTemplates);
+      setTemplates(updatedTemplates);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const loadFromTemplate = async (template: SavedTemplate) => {
+    try {
+      await processPdfBytes(template.data, template.name);
+      setSuccessMsg(`Loaded template: ${template.name}`);
+    } catch (err) {
+      setError('Failed to load template.');
+    }
+  };
 
   const handleDragOver = (e: React.DragEvent) => {
     e.preventDefault();
@@ -54,17 +125,29 @@ export const PDFEntry: React.FC = () => {
     }
     
     setIsProcessing(true);
+    
+    try {
+      const arrayBuffer = await selectedFile.arrayBuffer();
+      const uint8Array = new Uint8Array(arrayBuffer);
+      await processPdfBytes(uint8Array, selectedFile.name);
+    } catch (err) {
+      console.error(err);
+      setError('Failed to load PDF. It might be corrupted or password protected.');
+      setIsProcessing(false);
+    }
+  };
+
+  const processPdfBytes = async (uint8Array: Uint8Array, name: string) => {
     setError(null);
     setFilledPdfUrl(null);
     setSuccessMsg(null);
     setFields([]);
     setFieldValues({});
+    setFileName(name);
+    setPdfBytes(uint8Array);
+    setIsProcessing(true);
 
     try {
-      const arrayBuffer = await selectedFile.arrayBuffer();
-      const uint8Array = new Uint8Array(arrayBuffer);
-      setPdfBytes(uint8Array);
-      
       const pdfDoc = await PDFDocument.load(uint8Array);
       const form = pdfDoc.getForm();
       const formFields = form.getFields();
@@ -72,7 +155,6 @@ export const PDFEntry: React.FC = () => {
       if (formFields.length === 0) {
         setError('No fillable form fields found in this PDF. Please upload a PDF with editable fields.');
         setIsProcessing(false);
-        setFile(selectedFile);
         return;
       }
 
@@ -80,7 +162,7 @@ export const PDFEntry: React.FC = () => {
       const initialValues: Record<string, any> = {};
 
       formFields.forEach(field => {
-        const name = field.getName();
+        const fieldName = field.getName();
         let type: FormField['type'] = 'unknown';
         let value: any = '';
         let options: string[] | undefined = undefined;
@@ -102,17 +184,16 @@ export const PDFEntry: React.FC = () => {
         }
 
         if (type !== 'unknown') {
-          extractedFields.push({ name, type, value, options });
-          initialValues[name] = value;
+          extractedFields.push({ name: fieldName, type, value, options });
+          initialValues[fieldName] = value;
         }
       });
 
       setFields(extractedFields);
       setFieldValues(initialValues);
-      setFile(selectedFile);
     } catch (err) {
       console.error(err);
-      setError('Failed to load PDF. It might be corrupted or password protected.');
+      setError('Failed to parse PDF form fields.');
     } finally {
       setIsProcessing(false);
     }
@@ -153,9 +234,6 @@ export const PDFEntry: React.FC = () => {
         }
       });
 
-      // Optional: Flatten the form to make it read-only after saving
-      // form.flatten();
-
       const newPdfBytes = await pdfDoc.save();
       const blob = new Blob([newPdfBytes as any], { type: 'application/pdf' });
       const url = URL.createObjectURL(blob);
@@ -174,23 +252,23 @@ export const PDFEntry: React.FC = () => {
     if (!filledPdfUrl) return;
     const a = document.createElement('a');
     a.href = filledPdfUrl;
-    a.download = `filled_${file?.name || 'document'}`;
+    a.download = `filled_${fileName}`;
     document.body.appendChild(a);
     a.click();
     document.body.removeChild(a);
   };
 
   const resetTool = () => {
-    setFile(null);
+    setFileName('');
     setFields([]);
     setFieldValues({});
     setFilledPdfUrl(null);
     setSuccessMsg(null);
     setError(null);
     setPdfBytes(null);
+    setShowSaveTemplate(false);
   };
 
-  // Helper to format field names for display (e.g., "first_name" -> "First Name")
   const formatFieldName = (name: string) => {
     return name
       .replace(/[_.-]/g, ' ')
@@ -202,43 +280,108 @@ export const PDFEntry: React.FC = () => {
   return (
     <div className="tool-container">
       <div className="tool-header">
-        <h2 className="tool-title">PDF Entry</h2>
-        <p className="tool-subtitle">Upload a fillable PDF form, enter your values, and download the completed document.</p>
+        <h2 className="tool-title">PDF Entry & Templates</h2>
+        <p className="tool-subtitle">Upload a fillable PDF (like OREA Form 410), fill it out, and save it as a reusable template.</p>
       </div>
 
-      {!file ? (
-        <div 
-          className={`dropzone ${isDragging ? 'active' : ''}`}
-          onDragOver={handleDragOver}
-          onDragLeave={handleDragLeave}
-          onDrop={handleDrop}
-          onClick={() => fileInputRef.current?.click()}
-        >
-          <UploadCloud className="dropzone-icon" size={48} />
-          <p className="dropzone-text">Click or drag a Fillable PDF here</p>
-          <p className="dropzone-subtext">Upload a PDF form to enter values</p>
-          <input 
-            type="file" 
-            accept="application/pdf" 
-            className="hidden-input" 
-            ref={fileInputRef}
-            onChange={handleFileChange}
-          />
-        </div>
+      {!pdfBytes ? (
+        <>
+          <div 
+            className={`dropzone ${isDragging ? 'active' : ''}`}
+            onDragOver={handleDragOver}
+            onDragLeave={handleDragLeave}
+            onDrop={handleDrop}
+            onClick={() => fileInputRef.current?.click()}
+          >
+            <UploadCloud className="dropzone-icon" size={48} />
+            <p className="dropzone-text">Click or drag a Fillable PDF here</p>
+            <p className="dropzone-subtext">Upload a new PDF to fill out or save as template</p>
+            <input 
+              type="file" 
+              accept="application/pdf" 
+              className="hidden-input" 
+              ref={fileInputRef}
+              onChange={handleFileChange}
+            />
+          </div>
+
+          {templates.length > 0 && (
+            <div className="controls-panel" style={{ marginTop: '2rem' }}>
+              <h3 style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '1rem' }}>
+                <FolderOpen size={20} /> My Saved Templates
+              </h3>
+              <div className="file-list">
+                {templates.map(template => (
+                  <div key={template.id} className="file-item" style={{ cursor: 'pointer' }} onClick={() => loadFromTemplate(template)}>
+                    <div className="file-info">
+                      <Bookmark className="file-icon" size={24} />
+                      <div>
+                        <div className="file-name">{template.name}</div>
+                        <div className="file-size">Saved on {new Date(template.createdAt).toLocaleDateString()}</div>
+                      </div>
+                    </div>
+                    <button 
+                      className="icon-btn" 
+                      onClick={(e) => deleteTemplate(template.id, e)}
+                      title="Delete Template"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </>
       ) : (
         <div className="file-list">
           <div className="file-item" style={{ cursor: 'default', transform: 'none', boxShadow: 'none' }}>
             <div className="file-info">
               <File className="file-icon" size={24} />
               <div>
-                <div className="file-name">{file.name}</div>
+                <div className="file-name">{fileName}</div>
                 <div className="file-size">{fields.length} editable fields found</div>
               </div>
             </div>
-            <button className="icon-btn" onClick={resetTool} title="Upload a different file">
-              <RefreshCw size={18} />
-            </button>
+            <div style={{ display: 'flex', gap: '0.5rem' }}>
+              {!templates.find(t => t.data === pdfBytes) && (
+                <button 
+                  className="icon-btn move-btn" 
+                  onClick={() => setShowSaveTemplate(!showSaveTemplate)}
+                  title="Save as Template"
+                >
+                  <Bookmark size={18} />
+                </button>
+              )}
+              <button className="icon-btn" onClick={resetTool} title="Close / Upload another">
+                <RefreshCw size={18} />
+              </button>
+            </div>
           </div>
+
+          {showSaveTemplate && (
+            <div className="controls-panel" style={{ background: 'rgba(139, 92, 246, 0.1)', borderColor: 'var(--primary)' }}>
+              <label className="input-label">Save this PDF as a reusable template (e.g. "Form 410"):</label>
+              <div style={{ display: 'flex', gap: '1rem' }}>
+                <input 
+                  type="text" 
+                  className="text-input" 
+                  style={{ flex: 1 }}
+                  placeholder="Template Name..."
+                  value={templateNameInput}
+                  onChange={e => setTemplateNameInput(e.target.value)}
+                />
+                <button 
+                  className="primary-btn" 
+                  style={{ width: 'auto', marginTop: 0, padding: '0.8rem 1.5rem' }}
+                  onClick={saveTemplateToDb}
+                  disabled={!templateNameInput.trim()}
+                >
+                  Save Template
+                </button>
+              </div>
+            </div>
+          )}
 
           {fields.length > 0 && (
             <div className="controls-panel" style={{ maxHeight: '50vh', overflowY: 'auto' }}>
