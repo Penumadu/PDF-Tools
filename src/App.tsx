@@ -30,6 +30,37 @@ import { CompressImage } from './tools/CompressImage';
 import { ResizeImage } from './tools/ResizeImage';
 import { CropImage } from './tools/CropImage';
 import { ConvertImage } from './tools/ConvertImage';
+import { GrayscaleImage } from './tools/GrayscaleImage';
+import { RotateImage } from './tools/RotateImage';
+import { ImageToBase64 } from './tools/ImageToBase64';
+import { WatermarkImage } from './tools/WatermarkImage';
+import { RemoveWatermarkImage } from './tools/RemoveWatermarkImage';
+
+// New missing tools
+import { AIPDFAssistant } from './tools/AIPDFAssistant';
+import { ChatWithPDF } from './tools/ChatWithPDF';
+import { AIPDFSummarizer } from './tools/AIPDFSummarizer';
+import { TranslatePDF } from './tools/TranslatePDF';
+import { AIQuestionGenerator } from './tools/AIQuestionGenerator';
+import { ExtractPDFPages } from './tools/ExtractPDFPages';
+import { PDFAnnotator } from './tools/PDFAnnotator';
+import { CropPDF } from './tools/CropPDF';
+import { RedactPDF } from './tools/RedactPDF';
+import { SharePDF } from './tools/SharePDF';
+import { PDFToWord } from './tools/PDFToWord';
+import { PDFToExcel } from './tools/PDFToExcel';
+import { PDFToPPT } from './tools/PDFToPPT';
+import { WordToPDF } from './tools/WordToPDF';
+import { ExcelToPDF } from './tools/ExcelToPDF';
+import { PPTToPDF } from './tools/PPTToPDF';
+import { PDFOCR } from './tools/PDFOCR';
+import { TXTToPDF } from './tools/TXTToPDF';
+import { RTFToPDF } from './tools/RTFToPDF';
+import { ODTToPDF } from './tools/ODTToPDF';
+import { EPUBToPDF } from './tools/EPUBToPDF';
+import { RequestSignatures } from './tools/RequestSignatures';
+import { PDFScanner } from './tools/PDFScanner';
+import { PDFConverter } from './tools/PDFConverter';
 
 export default function App() {
   return (
@@ -74,6 +105,37 @@ export default function App() {
           <Route path="/tool/resize-image" element={<ResizeImage />} />
           <Route path="/tool/crop-image" element={<CropImage />} />
           <Route path="/tool/convert-image" element={<ConvertImage />} />
+          <Route path="/tool/grayscale-image" element={<GrayscaleImage />} />
+          <Route path="/tool/rotate-image" element={<RotateImage />} />
+          <Route path="/tool/image-to-base64" element={<ImageToBase64 />} />
+          <Route path="/tool/watermark-image" element={<WatermarkImage />} />
+          <Route path="/tool/remove-watermark-image" element={<RemoveWatermarkImage />} />
+          
+          {/* New Tools from Screenshot */}
+          <Route path="/tool/ai-pdf-assistant" element={<AIPDFAssistant />} />
+          <Route path="/tool/chat-with-pdf" element={<ChatWithPDF />} />
+          <Route path="/tool/ai-pdf-summarizer" element={<AIPDFSummarizer />} />
+          <Route path="/tool/translate-pdf" element={<TranslatePDF />} />
+          <Route path="/tool/ai-question-generator" element={<AIQuestionGenerator />} />
+          <Route path="/tool/extract-pdf-pages" element={<ExtractPDFPages />} />
+          <Route path="/tool/pdf-annotator" element={<PDFAnnotator />} />
+          <Route path="/tool/crop-pdf" element={<CropPDF />} />
+          <Route path="/tool/redact-pdf" element={<RedactPDF />} />
+          <Route path="/tool/share-pdf" element={<SharePDF />} />
+          <Route path="/tool/pdf-to-word" element={<PDFToWord />} />
+          <Route path="/tool/pdf-to-excel" element={<PDFToExcel />} />
+          <Route path="/tool/pdf-to-ppt" element={<PDFToPPT />} />
+          <Route path="/tool/word-to-pdf" element={<WordToPDF />} />
+          <Route path="/tool/excel-to-pdf" element={<ExcelToPDF />} />
+          <Route path="/tool/ppt-to-pdf" element={<PPTToPDF />} />
+          <Route path="/tool/pdf-ocr" element={<PDFOCR />} />
+          <Route path="/tool/txt-to-pdf" element={<TXTToPDF />} />
+          <Route path="/tool/rtf-to-pdf" element={<RTFToPDF />} />
+          <Route path="/tool/odt-to-pdf" element={<ODTToPDF />} />
+          <Route path="/tool/epub-to-pdf" element={<EPUBToPDF />} />
+          <Route path="/tool/request-signatures" element={<RequestSignatures />} />
+          <Route path="/tool/pdf-scanner" element={<PDFScanner />} />
+          <Route path="/tool/pdf-converter" element={<PDFConverter />} />
           
           <Route path="*" element={
             <div style={{ padding: 100, textAlign: 'center' }}>
