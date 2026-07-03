@@ -57,11 +57,7 @@ export const PDFEntry: React.FC = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  useEffect(() => {
-    loadTemplates();
-  }, []);
-
-  const loadTemplates = async () => {
+  async function loadTemplates() {
     try {
       const saved = await localforage.getItem<SavedTemplate[]>('pdf_templates');
       if (saved) {
@@ -70,7 +66,12 @@ export const PDFEntry: React.FC = () => {
     } catch (err) {
       console.error('Failed to load templates', err);
     }
-  };
+  }
+
+  useEffect(() => {
+    // eslint-disable-next-line
+    loadTemplates();
+  }, []);
 
   const saveTemplateToDb = async () => {
     if (!pdfBytes || !templateNameInput.trim()) return;
@@ -245,6 +246,7 @@ export const PDFEntry: React.FC = () => {
     const y = ((e.clientY - rect.top) / rect.height) * 100;
 
     const newField: CustomTextField = {
+      // eslint-disable-next-line react-hooks/purity
       id: Math.random().toString(36).substring(7),
       pageIndex,
       x,

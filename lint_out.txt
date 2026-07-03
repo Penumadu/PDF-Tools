@@ -1,0 +1,185 @@
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/components/PDFEntry.tsx
+   41:65  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+   61:5   error    Error: Cannot access variable before it is declared
+
+`loadTemplates` is accessed before it is declared, which prevents the earlier access from updating when this value changes over time.
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/components/PDFEntry.tsx:61:5
+  59 |
+  60 |   useEffect(() => {
+> 61 |     loadTemplates();
+     |     ^^^^^^^^^^^^^ `loadTemplates` accessed before it is declared
+  62 |   }, []);
+  63 |
+  64 |   const loadTemplates = async () => {
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/components/PDFEntry.tsx:64:3
+  62 |   }, []);
+  63 |
+> 64 |   const loadTemplates = async () => {
+     |   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+> 65 |     try {
+     | ^^^^^^^^^
+> 66 |       const saved = await localforage.getItem<SavedTemplate[]>('pdf_templates');
+     | ^^^^^^^^^
+> 67 |       if (saved) {
+     | ^^^^^^^^^
+> 68 |         setTemplates(saved);
+     | ^^^^^^^^^
+> 69 |       }
+     | ^^^^^^^^^
+> 70 |     } catch (err) {
+     | ^^^^^^^^^
+> 71 |       console.error('Failed to load templates', err);
+     | ^^^^^^^^^
+> 72 |     }
+     | ^^^^^^^^^
+> 73 |   };
+     | ^^^^^ `loadTemplates` is declared here
+  74 |
+  75 |   const saveTemplateToDb = async () => {
+  76 |     if (!pdfBytes || !templateNameInput.trim()) return;  react-hooks/immutability
+  112:14  warning  'err' is defined but never used                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     @typescript-eslint/no-unused-vars
+  171:67  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  189:43  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  194:20  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  229:51  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+  248:11  error    Error: Cannot call impure function during render
+
+`Math.random` is an impure function. Calling an impure function can produce unstable results that update unpredictably when the component happens to re-render. (https://react.dev/reference/rules/components-and-hooks-must-be-pure#components-and-hooks-must-be-idempotent).
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/components/PDFEntry.tsx:248:11
+  246 |
+  247 |     const newField: CustomTextField = {
+> 248 |       id: Math.random().toString(36).substring(7),
+      |           ^^^^^^^^^^^^^ Cannot call impure function
+  249 |       pageIndex,
+  250 |       x,
+  251 |       y,                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            react-hooks/purity
+  315:45  warning  Unexpected any. Specify a different type                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/components/PDFMerger.tsx
+  113:48  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/components/PDFSplitter.tsx
+  122:9   error    The value assigned to 'pagesToExtract' is not used in subsequent statements  no-useless-assignment
+  133:19  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+  155:45  warning  Unexpected any. Specify a different type                                     @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/AddPageNumbers.tsx
+    2:10   warning  'PDFDocument' is defined but never used   @typescript-eslint/no-unused-vars
+   70:45   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  115:108  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  127:104  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/AddWatermark.tsx
+   2:10  warning  'PDFDocument' is defined but never used          @typescript-eslint/no-unused-vars
+  46:13  warning  'textHeight' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  63:45  warning  Unexpected any. Specify a different type         @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/CompressPDF.tsx
+  53:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/ConvertImage.tsx
+  121:64  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/CropImage.tsx
+  144:14  warning  'err' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/DeletePages.tsx
+   2:13  warning  'pdfjs' is defined but never used         @typescript-eslint/no-unused-vars
+  83:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/EditPDF.tsx
+    2:10  warning  'PDFDocument' is defined but never used         @typescript-eslint/no-unused-vars
+    8:48  warning  'renderPageToCanvas' is defined but never used  @typescript-eslint/no-unused-vars
+    9:25  warning  'ImageIcon' is defined but never used           @typescript-eslint/no-unused-vars
+    9:36  warning  'Square' is defined but never used              @typescript-eslint/no-unused-vars
+    9:44  warning  'Circle' is defined but never used              @typescript-eslint/no-unused-vars
+    9:52  warning  'Minus' is defined but never used               @typescript-eslint/no-unused-vars
+   79:65  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+  151:45  warning  Unexpected any. Specify a different type        @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/FillPDFForm.tsx
+  76:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  78:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  79:28  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  81:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  83:23  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  91:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/FlattenPDF.tsx
+  38:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/ImageToPDF.tsx
+  143:42   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  226:114  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  235:120  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/MergePDF.tsx
+  67:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/OrganizePages.tsx
+   2:13  warning  'pdfjs' is defined but never used                                                                                                                              @typescript-eslint/no-unused-vars
+   3:1   warning  Include a description after the "@ts-expect-error" directive to explain why the @ts-expect-error is necessary. The description must be 3 characters or longer  @typescript-eslint/ban-ts-comment
+  99:45  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/PDFFormCreator.tsx
+   52:45   warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  118:110  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/PDFReader.tsx
+  67:72  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  72:21  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/PDFToJPG.tsx
+  2:13  warning  'pdfjs' is defined but never used                                                                                                                              @typescript-eslint/no-unused-vars
+  3:1   warning  Include a description after the "@ts-expect-error" directive to explain why the @ts-expect-error is necessary. The description must be 3 characters or longer  @typescript-eslint/ban-ts-comment
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/PDFToPNG.tsx
+  2:13  warning  'pdfjs' is defined but never used                                                                                                                              @typescript-eslint/no-unused-vars
+  3:1   warning  Include a description after the "@ts-expect-error" directive to explain why the @ts-expect-error is necessary. The description must be 3 characters or longer  @typescript-eslint/ban-ts-comment
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/ProtectPDF.tsx
+  66:51  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/RepairPDF.tsx
+  35:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/ResizeImage.tsx
+   1:27  warning  'useEffect' is defined but never used  @typescript-eslint/no-unused-vars
+  84:16  warning  'err' is defined but never used        @typescript-eslint/no-unused-vars
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/RotatePDF.tsx
+    2:10  warning  'PDFDocument' is defined but never used                                                                                                                        @typescript-eslint/no-unused-vars
+    3:13  warning  'pdfjs' is defined but never used                                                                                                                              @typescript-eslint/no-unused-vars
+    4:1   warning  Include a description after the "@ts-expect-error" directive to explain why the @ts-expect-error is necessary. The description must be 3 characters or longer  @typescript-eslint/ban-ts-comment
+  102:45  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/SignPDF.tsx
+   68:65  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  179:45  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/SplitPDF.tsx
+   2:13  warning  'pdfjs' is defined but never used                                                                                                                              @typescript-eslint/no-unused-vars
+   3:1   warning  Include a description after the "@ts-expect-error" directive to explain why the @ts-expect-error is necessary. The description must be 3 characters or longer  @typescript-eslint/ban-ts-comment
+  92:45  warning  Unexpected any. Specify a different type                                                                                                                       @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/UnlockPDF.tsx
+  29:14  warning  'e' is defined but never used             @typescript-eslint/no-unused-vars
+  46:69  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  50:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  52:19  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/tools/WatermarkImage.tsx
+  6:10  warning  'Droplets' is defined but never used  @typescript-eslint/no-unused-vars
+
+/Users/sahasrapenumadu/Documents/Srini Learning/PDF Tools/src/utils/pdfUtils.ts
+   23:88  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   51:61  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+   73:77  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  111:35  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+✖ 77 problems (3 errors, 74 warnings)
+

@@ -120,7 +120,7 @@ export const PDFSplitter: React.FC = () => {
   const splitPDF = async () => {
     if (!file) return;
 
-    let pagesToExtract: number[] = [];
+    let pagesToExtract: number[];
 
     try {
       if (splitMode === 'visual') {
