@@ -1,6 +1,4 @@
 import React, { useState } from 'react';
-import * as pdfjs from 'pdfjs-dist';
-// @ts-ignore
 import { ToolPage } from '../components/ToolPage';
 import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';

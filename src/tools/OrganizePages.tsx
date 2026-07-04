@@ -1,13 +1,11 @@
 import React, { useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
-import * as pdfjs from 'pdfjs-dist';
-// @ts-ignore
 import { ToolPage } from '../components/ToolPage';
 import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
 import { loadPDFDocument, loadPDFForRendering, generateThumbnail } from '../utils/pdfUtils';
-import { GripHorizontal } from 'lucide-react';
+import { GripHorizontal, X } from 'lucide-react';
 
 interface PageInfo {
   id: string;
@@ -140,11 +138,19 @@ export const OrganizePages: React.FC = () => {
       {!isProcessing && !isSaving && !resultUrl && file && pages.length > 0 && (
         <>
           <div className="controls-panel">
-            <div style={{ textAlign: 'center' }}>
-              <p style={{ marginBottom: 16 }}>Drag and drop pages to rearrange them.</p>
-              <button className="btn btn-primary btn-lg" onClick={applyOrder} style={{ background: tool.color }}>
-                Apply Changes
-              </button>
+            <div className="controls-row justify-between" style={{ alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+                <button className="icon-btn danger" onClick={reset} title="Remove file" style={{ padding: '4px' }}>
+                  <X size={16} />
+                </button>
+              </div>
+              <div style={{ textAlign: 'center' }}>
+                <p style={{ marginBottom: 16 }}>Drag and drop pages to rearrange them.</p>
+                <button className="btn btn-primary btn-lg" onClick={applyOrder} style={{ background: tool.color }}>
+                  Apply Changes
+                </button>
+              </div>
             </div>
           </div>
 

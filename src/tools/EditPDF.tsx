@@ -1,12 +1,12 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { PDFDocument, rgb } from 'pdf-lib';
-import * as pdfjs from 'pdfjs-dist';
+import type * as pdfjs from 'pdfjs-dist';
 import { ToolPage } from '../components/ToolPage';
 import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
 import { loadPDFDocument, loadPDFForRendering, renderPageToCanvas } from '../utils/pdfUtils';
-import { Type, Image as ImageIcon, Square, Circle, Minus, MousePointer2 } from 'lucide-react';
+import { Type, Image as ImageIcon, Square, Circle, Minus, MousePointer2, X } from 'lucide-react';
 
 interface TextAnnotation {
   id: string;
@@ -194,6 +194,12 @@ export const EditPDF: React.FC = () => {
           <div style={{ flex: '1 1 auto', overflow: 'hidden', background: '#e2e8f0', borderRadius: 8, padding: 24, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
             
             <div style={{ display: 'flex', gap: 16, marginBottom: 16, alignItems: 'center' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginRight: 'auto' }}>
+                <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+                <button className="icon-btn danger" onClick={reset} title="Remove file" style={{ padding: '4px' }}>
+                  <X size={16} />
+                </button>
+              </div>
               <button className="btn btn-secondary" disabled={currentPage <= 1} onClick={() => setCurrentPage(p => p - 1)}>Prev</button>
               <span>Page {currentPage} of {numPages}</span>
               <button className="btn btn-secondary" disabled={currentPage >= numPages} onClick={() => setCurrentPage(p => p + 1)}>Next</button>

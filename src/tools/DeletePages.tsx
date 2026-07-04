@@ -1,12 +1,11 @@
 import React, { useState } from 'react';
 import { PDFDocument } from 'pdf-lib';
-import * as pdfjs from 'pdfjs-dist';
 import { ToolPage } from '../components/ToolPage';
 import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
 import { loadPDFDocument, loadPDFForRendering, generateThumbnail } from '../utils/pdfUtils';
-import { Trash2 } from 'lucide-react';
+import { Trash2, X } from 'lucide-react';
 
 interface PageInfo {
   pageIndex: number;
@@ -127,7 +126,12 @@ export const DeletePages: React.FC = () => {
           <div className="controls-panel">
             <div className="controls-row justify-between">
               <div>
-                <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+                  <button className="icon-btn danger" onClick={reset} title="Remove file" style={{ padding: '4px' }}>
+                    <X size={16} />
+                  </button>
+                </div>
                 <p style={{ fontSize: '0.9rem', color: 'var(--text-muted)' }}>
                   {pages.length - deletedCount} pages will remain
                 </p>

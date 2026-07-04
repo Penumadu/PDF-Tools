@@ -5,7 +5,7 @@ import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
 import { loadPDFDocument } from '../utils/pdfUtils';
-import { ListChecks } from 'lucide-react';
+import { ListChecks, X } from 'lucide-react';
 
 export const PDFFormCreator: React.FC = () => {
   const tool = getToolBySlug('pdf-form-creator')!;
@@ -98,7 +98,12 @@ export const PDFFormCreator: React.FC = () => {
             }}>
               <ListChecks size={32} />
             </div>
-            <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+              <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+              <button className="icon-btn danger" onClick={reset} title="Remove file" style={{ padding: '4px' }}>
+                <X size={16} />
+              </button>
+            </div>
             <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
               Add a new interactive field to the first page of the document.
             </p>

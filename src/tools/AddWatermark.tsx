@@ -5,6 +5,7 @@ import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
 import { loadPDFDocument } from '../utils/pdfUtils';
+import { X } from 'lucide-react';
 
 export const AddWatermark: React.FC = () => {
   const tool = getToolBySlug('add-watermark')!;
@@ -100,7 +101,12 @@ export const AddWatermark: React.FC = () => {
       {!isSaving && !resultUrl && file && (
         <div className="controls-panel" style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ textAlign: 'center', marginBottom: 24 }}>
-            <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+              <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+              <button className="icon-btn danger" onClick={reset} title="Remove file" style={{ padding: '4px' }}>
+                <X size={16} />
+              </button>
+            </div>
           </div>
 
           <div className="input-group" style={{ marginBottom: 16 }}>

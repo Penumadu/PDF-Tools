@@ -3,11 +3,17 @@ import * as pdfjs from 'pdfjs-dist';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 
-// Configure PDF.js worker
-pdfjs.GlobalWorkerOptions.workerSrc = new URL(
-  'pdfjs-dist/build/pdf.worker.min.mjs',
-  import.meta.url,
-).toString();
+// Configure PDF.js worker - use Vite's new URL() asset resolution with CDN fallback
+try {
+  const workerUrl = new URL(
+    'pdfjs-dist/build/pdf.worker.min.mjs',
+    import.meta.url,
+  ).toString();
+  pdfjs.GlobalWorkerOptions.workerSrc = workerUrl;
+} catch {
+  // Fallback to CDN if local resolution fails
+  pdfjs.GlobalWorkerOptions.workerSrc = `https://unpkg.com/pdfjs-dist@${pdfjs.version}/build/pdf.worker.min.mjs`;
+}
 
 /**
  * Load a PDF file into a PDFDocument (pdf-lib)

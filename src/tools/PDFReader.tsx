@@ -5,7 +5,7 @@ import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
 import { loadPDFForRendering } from '../utils/pdfUtils';
-import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize } from 'lucide-react';
+import { ZoomIn, ZoomOut, ChevronLeft, ChevronRight, Maximize, X } from 'lucide-react';
 
 export const PDFReader: React.FC = () => {
   const tool = getToolBySlug('pdf-reader')!;
@@ -119,8 +119,11 @@ export const PDFReader: React.FC = () => {
         <div ref={containerRef} style={{ background: '#e2e8f0', borderRadius: 8, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: '80vh', maxHeight: 800 }}>
           {/* Toolbar */}
           <div style={{ padding: '12px 24px', background: 'white', borderBottom: '1px solid var(--border-light)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-            <div style={{ fontWeight: 600, fontSize: '0.9rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
-              {file.name}
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+              <button className="icon-btn" onClick={reset} title="Remove file"><X size={18} /></button>
+              <div style={{ fontWeight: 600, fontSize: '0.9rem', maxWidth: 200, whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                {file.name}
+              </div>
             </div>
             
             <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>

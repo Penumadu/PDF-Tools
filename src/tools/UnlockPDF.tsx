@@ -4,7 +4,7 @@ import { ToolPage } from '../components/ToolPage';
 import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
-import { Unlock } from 'lucide-react';
+import { Unlock, X } from 'lucide-react';
 
 export const UnlockPDF: React.FC = () => {
   const tool = getToolBySlug('unlock-pdf')!;
@@ -101,7 +101,12 @@ export const UnlockPDF: React.FC = () => {
             }}>
               <Unlock size={32} />
             </div>
-            <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+              <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+              <button className="icon-btn danger" onClick={reset} title="Remove file" style={{ padding: '4px' }}>
+                <X size={16} />
+              </button>
+            </div>
             <p style={{ color: 'var(--text-secondary)' }}>Enter the password to remove protection</p>
           </div>
 

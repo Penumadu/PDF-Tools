@@ -4,7 +4,7 @@ import { ToolPage } from '../components/ToolPage';
 import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
-import { Wrench } from 'lucide-react';
+import { Wrench, X } from 'lucide-react';
 
 export const RepairPDF: React.FC = () => {
   const tool = getToolBySlug('repair-pdf')!;
@@ -81,7 +81,12 @@ export const RepairPDF: React.FC = () => {
             }}>
               <Wrench size={32} />
             </div>
-            <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '12px' }}>
+              <strong style={{ fontSize: '1.1rem' }}>{file.name}</strong>
+              <button className="icon-btn danger" onClick={reset} title="Remove file" style={{ padding: '4px' }}>
+                <X size={16} />
+              </button>
+            </div>
             <p style={{ color: 'var(--text-secondary)', marginTop: 8 }}>
               We will attempt to rebuild the file structure and recover readable data.
             </p>
