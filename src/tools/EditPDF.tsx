@@ -971,6 +971,343 @@ export const EditPDF: React.FC = () => {
 
   const selectedAnnotation = annotations.find(a => a.id === selectedId);
 
+  // When editing, render full-screen editor WITHOUT ToolPage/MainLayout chrome
+  const isEditing = !isProcessing && !isSaving && !resultUrl && file && pages.length > 0;
+
+  if (isEditing) {
+    return (
+      <div style={{ position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', display: 'flex', flexDirection: 'column', background: '#f1f5f9', zIndex: 9999 }} onKeyDown={handleKeyDown} tabIndex={0}>
+        
+        {error && <div className="message message-error" style={{ position: 'absolute', top: 60, left: '50%', transform: 'translateX(-50%)', zIndex: 100 }}>{error}</div>}
+        
+        {/* ─── Top Header Bar ─── */}
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '8px 20px', background: 'white', borderBottom: '1px solid #e2e8f0', flexShrink: 0 }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div onClick={reset} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: '#f1f5f9', color: '#64748b', transition: 'background 0.2s' }}>
+              <X size={18} />
+            </div>
+            <div>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                <strong style={{ fontSize: '0.9rem', color: '#1e293b' }}>{file.name}</strong>
+                <Cloud size={14} color="#10b981" />
+              </div>
+              <span style={{ fontSize: '0.7rem', color: '#94a3b8' }}>Editing locally</span>
+            </div>
+          </div>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <button onClick={savePDF} style={{ background: '#2563eb', color: 'white', display: 'flex', alignItems: 'center', gap: 6, padding: '8px 20px', borderRadius: 8, fontSize: '0.85rem', fontWeight: 600, border: 'none', cursor: 'pointer', boxShadow: '0 2px 8px -2px rgba(37, 99, 235, 0.4)' }}>
+              <Download size={15} /> Download
+            </button>
+          </div>
+        </div>
+
+        {/* ─── Toolbar Bar ─── */}
+        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '6px 20px', background: 'white', borderBottom: '1px solid #e2e8f0', flexShrink: 0, overflowX: 'auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button onClick={() => setShowSidebar(!showSidebar)} style={{ border: 'none', padding: '6px 10px', borderRadius: 6, background: showSidebar ? '#eff6ff' : 'transparent', color: showSidebar ? '#2563eb' : '#475569', cursor: 'pointer' }} title="Toggle Pages">
+              <Grid size={16} />
+            </button>
+
+            <div style={{ width: 1, height: 20, background: '#e2e8f0', margin: '0 6px' }} />
+
+            {[
+              { tool: 'select' as const, icon: <MousePointer2 size={15} />, label: 'Select' },
+              { tool: 'text' as const, icon: <Type size={15} />, label: 'Text' },
+            ].map(t => (
+              <button key={t.tool} onClick={() => { setActiveTool(t.tool); setSelectedId(null); }} style={{ border: 'none', padding: '5px 10px', borderRadius: 6, background: activeTool === t.tool ? '#eff6ff' : 'transparent', color: activeTool === t.tool ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
+
+            <div style={{ width: 1, height: 20, background: '#e2e8f0', margin: '0 6px' }} />
+
+            {[
+              { tool: 'pen' as const, icon: <PenTool size={15} />, label: 'Draw' },
+              { tool: 'highlighter' as const, icon: <Highlighter size={15} />, label: 'Highlight' },
+              { tool: 'eraser' as const, icon: <Eraser size={15} />, label: 'Erase' },
+            ].map(t => (
+              <button key={t.tool} onClick={() => { setActiveTool(t.tool); setSelectedId(null); }} style={{ border: 'none', padding: '5px 10px', borderRadius: 6, background: activeTool === t.tool ? '#eff6ff' : 'transparent', color: activeTool === t.tool ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
+
+            <div style={{ width: 1, height: 20, background: '#e2e8f0', margin: '0 6px' }} />
+
+            {[
+              { tool: 'rect' as const, icon: <Square size={15} />, label: 'Rect' },
+              { tool: 'circle' as const, icon: <Circle size={15} />, label: 'Circle' },
+              { tool: 'line' as const, icon: <Minus size={15} />, label: 'Line' },
+              { tool: 'arrow' as const, icon: <ArrowRight size={15} />, label: 'Arrow' },
+            ].map(t => (
+              <button key={t.tool} onClick={() => { setActiveTool(t.tool); setSelectedId(null); }} style={{ border: 'none', padding: '5px 10px', borderRadius: 6, background: activeTool === t.tool ? '#eff6ff' : 'transparent', color: activeTool === t.tool ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+                {t.icon} {t.label}
+              </button>
+            ))}
+
+            <div style={{ width: 1, height: 20, background: '#e2e8f0', margin: '0 6px' }} />
+
+            <button onClick={triggerImageUpload} style={{ border: 'none', padding: '5px 10px', borderRadius: 6, background: 'transparent', color: '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 5, fontSize: '0.8rem', whiteSpace: 'nowrap' }}>
+              <ImageIcon size={15} /> Image
+            </button>
+            <input type="file" ref={imageInputRef} onChange={handleImageUpload} accept="image/*" style={{ display: 'none' }} />
+          </div>
+
+          <div style={{ display: 'flex', alignItems: 'center', gap: 4 }}>
+            <button onClick={undo} disabled={historyIndex <= 0} style={{ border: 'none', padding: 6, borderRadius: 6, background: 'transparent', color: historyIndex > 0 ? '#475569' : '#cbd5e1', cursor: historyIndex > 0 ? 'pointer' : 'default' }} title="Undo"><Undo2 size={15} /></button>
+            <button onClick={redo} disabled={historyIndex >= history.length - 1} style={{ border: 'none', padding: 6, borderRadius: 6, background: 'transparent', color: historyIndex < history.length - 1 ? '#475569' : '#cbd5e1', cursor: historyIndex < history.length - 1 ? 'pointer' : 'default' }} title="Redo"><Redo2 size={15} /></button>
+          </div>
+        </div>
+
+        {/* ─── Main Workspace ─── */}
+        <div style={{ display: 'flex', flex: 1, overflow: 'hidden' }}>
+          
+          {/* Left Sidebar: Page Thumbnails */}
+          {showSidebar && (
+            <div style={{ width: 180, background: 'white', borderRight: '1px solid #e2e8f0', padding: '12px 8px', overflowY: 'auto', display: 'flex', flexDirection: 'column', gap: 12, flexShrink: 0 }}>
+              {pages.map((pageState, idx) => (
+                <div key={pageState.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                  <div 
+                    onClick={() => { setCurrentPage(idx + 1); setSelectedId(null); }}
+                    style={{
+                      position: 'relative',
+                      cursor: 'pointer',
+                      border: `2px solid ${currentPage === idx + 1 ? '#2563eb' : '#e2e8f0'}`,
+                      borderRadius: 6,
+                      padding: 3,
+                      background: 'white',
+                      width: 110,
+                      height: 140,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: currentPage === idx + 1 ? '0 0 0 2px rgba(37,99,235,0.15)' : '0 1px 3px rgba(0,0,0,0.06)',
+                      transition: 'all 0.15s'
+                    }}
+                  >
+                    {pageState.originalIndex !== null && thumbnails[pageState.originalIndex] ? (
+                      <img src={thumbnails[pageState.originalIndex]} alt={`Page ${idx + 1}`} style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 3 }} />
+                    ) : (
+                      <div style={{ width: '100%', height: '100%', background: '#fafafa', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #cbd5e1', borderRadius: 3 }}>
+                        <span style={{ fontSize: '0.65rem', color: '#94a3b8' }}>Blank</span>
+                      </div>
+                    )}
+                    {/* Page action overlay */}
+                    <div 
+                      style={{ position: 'absolute', bottom: 3, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.8)', borderRadius: 4, padding: '1px 4px', display: 'flex', gap: 4, alignItems: 'center', zIndex: 5 }}
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      <button onClick={() => duplicatePage(idx)} style={{ border: 'none', background: 'transparent', color: 'white', padding: 2, cursor: 'pointer' }} title="Duplicate"><Copy size={10} /></button>
+                      <button onClick={() => rotatePage(idx)} style={{ border: 'none', background: 'transparent', color: 'white', padding: 2, cursor: 'pointer' }} title="Rotate"><RotateCw size={10} /></button>
+                      {pages.length > 1 && <button onClick={() => deletePage(idx)} style={{ border: 'none', background: 'transparent', color: '#f87171', padding: 2, cursor: 'pointer' }} title="Delete"><Trash2 size={10} /></button>}
+                    </div>
+                  </div>
+                  <span style={{ fontSize: '0.7rem', marginTop: 4, fontWeight: currentPage === idx + 1 ? 600 : 400, color: currentPage === idx + 1 ? '#2563eb' : '#64748b' }}>{idx + 1}</span>
+                  <button onClick={() => insertBlankPage(idx)} style={{ marginTop: 4, border: '1px dashed #cbd5e1', background: 'transparent', color: '#94a3b8', borderRadius: 4, padding: '2px 8px', fontSize: '0.65rem', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 2 }}><Plus size={8} /> Add</button>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Center Canvas */}
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', position: 'relative' }}>
+            <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 32 }}>
+              <div 
+                ref={containerRef}
+                onClick={handleOverlayClick}
+                style={{ 
+                  position: 'relative', 
+                  boxShadow: '0 20px 60px -15px rgba(0,0,0,0.15)',
+                  width: canvasWidth,
+                  height: canvasHeight,
+                  cursor: activeTool === 'select' ? 'default' : (activeTool === 'text' ? 'text' : 'crosshair'),
+                  userSelect: 'none',
+                  flexShrink: 0
+                }}
+              >
+                <canvas ref={pdfCanvasRef} style={{ display: 'block', width: '100%', height: '100%', background: 'white' }} />
+
+                <canvas 
+                  ref={drawingCanvasRef}
+                  onMouseDown={handleDrawingStart}
+                  onMouseMove={handleDrawingMove}
+                  onMouseUp={handleDrawingEnd}
+                  onMouseLeave={handleDrawingEnd}
+                  style={{ 
+                    position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', 
+                    zIndex: (activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'eraser') ? 25 : 5,
+                    pointerEvents: (activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'eraser') ? 'auto' : 'none'
+                  }}
+                />
+
+                {/* Annotation elements */}
+                <div style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: '100%', zIndex: 15, pointerEvents: activeTool === 'select' ? 'auto' : 'none' }}>
+                  {annotations.filter(ann => ann.pageId === pages[currentPage - 1]?.id).map(ann => {
+                    const isSelected = ann.id === selectedId;
+                    const isEditingText = ann.id === editingId;
+
+                    return (
+                      <div
+                        key={ann.id}
+                        onMouseDown={(e) => startDrag(e, ann)}
+                        onDoubleClick={(e) => { if (ann.type === 'text') { e.stopPropagation(); setEditingId(ann.id); } }}
+                        style={{
+                          position: 'absolute',
+                          left: `${ann.x}%`, top: `${ann.y}%`,
+                          width: `${ann.width}%`, height: `${ann.height}%`,
+                          border: isSelected ? '2px solid #2563eb' : '1px solid transparent',
+                          boxSizing: 'border-box',
+                          cursor: activeTool === 'select' ? 'move' : 'inherit',
+                          pointerEvents: 'auto'
+                        }}
+                      >
+                        {ann.type === 'text' && (
+                          <div style={{ width: '100%', height: '100%', color: ann.color, fontSize: ann.fontSize * scale, background: ann.bgColor, border: ann.borderWidth > 0 ? `${ann.borderWidth}px solid ${ann.borderColor}` : 'none', padding: 4, boxSizing: 'border-box', overflow: 'hidden', wordBreak: 'break-word', fontFamily: 'sans-serif' }}>
+                            {isEditingText ? (
+                              <textarea
+                                value={ann.text}
+                                onChange={(e) => updateSelectedProperty('text', e.target.value)}
+                                onBlur={() => setEditingId(null)}
+                                autoFocus
+                                style={{ width: '100%', height: '100%', color: ann.color, fontSize: ann.fontSize * scale, background: 'transparent', border: 'none', outline: 'none', resize: 'none', padding: 0, margin: 0, fontFamily: 'sans-serif' }}
+                              />
+                            ) : ann.text}
+                          </div>
+                        )}
+
+                        {ann.type === 'shape' && (
+                          <div style={{ width: '100%', height: '100%' }}>
+                            {ann.shapeType === 'rect' && (
+                              <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
+                                <rect x={ann.strokeWidth / 2} y={ann.strokeWidth / 2} width={`calc(100% - ${ann.strokeWidth}px)`} height={`calc(100% - ${ann.strokeWidth}px)`} stroke={ann.strokeColor} strokeWidth={ann.strokeWidth} fill={ann.fillColor} />
+                              </svg>
+                            )}
+                            {ann.shapeType === 'circle' && (
+                              <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
+                                <ellipse cx="50%" cy="50%" rx={`calc(50% - ${ann.strokeWidth / 2}px)`} ry={`calc(50% - ${ann.strokeWidth / 2}px)`} stroke={ann.strokeColor} strokeWidth={ann.strokeWidth} fill={ann.fillColor} />
+                              </svg>
+                            )}
+                            {ann.shapeType === 'line' && (
+                              <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
+                                <line x1="0" y1="100%" x2="100%" y2="0" stroke={ann.strokeColor} strokeWidth={ann.strokeWidth} />
+                              </svg>
+                            )}
+                            {ann.shapeType === 'arrow' && (
+                              <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
+                                <defs><marker id="arw" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="5" markerHeight="5" orient="auto-start-reverse"><path d="M 0 1 L 10 5 L 0 9 z" fill={ann.strokeColor} /></marker></defs>
+                                <line x1="0" y1="100%" x2="100%" y2="0" stroke={ann.strokeColor} strokeWidth={ann.strokeWidth} markerEnd="url(#arw)" />
+                              </svg>
+                            )}
+                          </div>
+                        )}
+
+                        {ann.type === 'image' && (
+                          <img src={ann.dataUrl} alt="Inserted" style={{ width: '100%', height: '100%', objectFit: 'fill' }} />
+                        )}
+
+                        {isSelected && !isEditingText && (
+                          <>
+                            <div onMouseDown={(e) => startResize(e, ann, 'tl')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', borderRadius: 2, left: -4, top: -4, cursor: 'nwse-resize', zIndex: 10 }} />
+                            <div onMouseDown={(e) => startResize(e, ann, 'tr')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', borderRadius: 2, right: -4, top: -4, cursor: 'nesw-resize', zIndex: 10 }} />
+                            <div onMouseDown={(e) => startResize(e, ann, 'bl')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', borderRadius: 2, left: -4, bottom: -4, cursor: 'nesw-resize', zIndex: 10 }} />
+                            <div onMouseDown={(e) => startResize(e, ann, 'br')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', borderRadius: 2, right: -4, bottom: -4, cursor: 'nwse-resize', zIndex: 10 }} />
+                          </>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            </div>
+
+            {/* Bottom floating control bar */}
+            <div style={{ position: 'absolute', bottom: 16, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.88)', backdropFilter: 'blur(8px)', borderRadius: 9999, padding: '5px 14px', display: 'flex', alignItems: 'center', gap: 12, color: 'white', boxShadow: '0 8px 24px rgba(0,0,0,0.25)', zIndex: 30 }}>
+              <button disabled={currentPage <= 1} onClick={() => { setCurrentPage(p => p - 1); setSelectedId(null); }} style={{ border: 'none', background: 'transparent', color: currentPage > 1 ? 'white' : '#64748b', cursor: currentPage > 1 ? 'pointer' : 'default', padding: 3 }}><ChevronLeft size={14} /></button>
+              <span style={{ fontSize: '0.8rem', minWidth: 50, textAlign: 'center' }}>{currentPage} / {pages.length}</span>
+              <button disabled={currentPage >= pages.length} onClick={() => { setCurrentPage(p => p + 1); setSelectedId(null); }} style={{ border: 'none', background: 'transparent', color: currentPage < pages.length ? 'white' : '#64748b', cursor: currentPage < pages.length ? 'pointer' : 'default', padding: 3 }}><ChevronRight size={14} /></button>
+              <div style={{ width: 1, height: 14, background: '#475569' }} />
+              <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} style={{ border: 'none', background: 'transparent', color: 'white', cursor: 'pointer', padding: 3 }}><ZoomOut size={14} /></button>
+              <span style={{ fontSize: '0.75rem', minWidth: 32, textAlign: 'center' }}>{Math.round(scale * 100)}%</span>
+              <button onClick={() => setScale(s => Math.min(2.5, s + 0.1))} style={{ border: 'none', background: 'transparent', color: 'white', cursor: 'pointer', padding: 3 }}><ZoomIn size={14} /></button>
+            </div>
+          </div>
+
+          {/* Right Sidebar: Properties */}
+          <div style={{ width: 220, background: 'white', borderLeft: '1px solid #e2e8f0', padding: 14, display: 'flex', flexDirection: 'column', justifyContent: 'space-between', flexShrink: 0, overflowY: 'auto' }}>
+            <div>
+              <h3 style={{ fontSize: '0.85rem', fontWeight: 600, color: '#334155', marginBottom: 14 }}>Properties</h3>
+
+              {selectedAnnotation ? (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <div style={{ fontSize: '0.75rem', color: '#64748b' }}>Selected: <strong style={{ color: '#1e293b', textTransform: 'capitalize' }}>{selectedAnnotation.type === 'shape' ? (selectedAnnotation as ShapeAnnotation).shapeType : selectedAnnotation.type}</strong></div>
+
+                  {(selectedAnnotation.type === 'text' || selectedAnnotation.type === 'shape') && (
+                    <div>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569' }}>Color</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginTop: 6 }}>
+                        {PALETTE_COLORS.filter(c => c !== 'transparent').map(c => (
+                          <button key={c} onClick={() => updateSelectedProperty(selectedAnnotation.type === 'text' ? 'color' : 'strokeColor', c)} style={{ width: 22, height: 22, borderRadius: '50%', background: c, border: (selectedAnnotation.type === 'text' ? (selectedAnnotation as TextAnnotation).color : (selectedAnnotation as ShapeAnnotation).strokeColor) === c ? '3px solid #2563eb' : '1px solid #d1d5db', cursor: 'pointer' }} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {(selectedAnnotation.type === 'text' || (selectedAnnotation.type === 'shape' && !['line','arrow'].includes((selectedAnnotation as ShapeAnnotation).shapeType))) && (
+                    <div>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569' }}>Fill</label>
+                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginTop: 6 }}>
+                        {PALETTE_COLORS.map(c => (
+                          <button key={c} onClick={() => updateSelectedProperty(selectedAnnotation.type === 'text' ? 'bgColor' : 'fillColor', c)} style={{ width: 22, height: 22, borderRadius: '50%', background: c === 'transparent' ? 'repeating-conic-gradient(#ccc 0% 25%, transparent 0% 50%) 50% / 8px 8px' : c, border: (selectedAnnotation.type === 'text' ? (selectedAnnotation as TextAnnotation).bgColor : (selectedAnnotation as ShapeAnnotation).fillColor) === c ? '3px solid #2563eb' : '1px solid #d1d5db', cursor: 'pointer' }} />
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
+                  {selectedAnnotation.type === 'text' && (
+                    <div>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569' }}>Font Size ({(selectedAnnotation as TextAnnotation).fontSize}px)</label>
+                      <input type="range" min="10" max="48" value={(selectedAnnotation as TextAnnotation).fontSize} onChange={(e) => updateSelectedProperty('fontSize', Number(e.target.value))} style={{ width: '100%', marginTop: 6 }} />
+                    </div>
+                  )}
+
+                  {selectedAnnotation.type === 'shape' && (
+                    <div>
+                      <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569' }}>Thickness ({(selectedAnnotation as ShapeAnnotation).strokeWidth}px)</label>
+                      <input type="range" min="1" max="12" value={(selectedAnnotation as ShapeAnnotation).strokeWidth} onChange={(e) => updateSelectedProperty('strokeWidth', Number(e.target.value))} style={{ width: '100%', marginTop: 6 }} />
+                    </div>
+                  )}
+
+                  <button onClick={deleteSelected} style={{ background: '#ef4444', color: 'white', border: 'none', borderRadius: 6, padding: '8px 12px', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontSize: '0.8rem', fontWeight: 500 }}>
+                    <Trash2 size={14} /> Delete
+                  </button>
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+                  <p style={{ fontSize: '0.75rem', color: '#94a3b8' }}>
+                    {(activeTool === 'pen' || activeTool === 'highlighter') ? 'Configure drawing style:' : 'Click an element to edit, or select a drawing tool.'}
+                  </p>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569' }}>Stroke Color</label>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 6, marginTop: 6 }}>
+                      {PALETTE_COLORS.filter(c => c !== 'transparent').map(c => (
+                        <button key={c} onClick={() => setStrokeColor(c)} style={{ width: 22, height: 22, borderRadius: '50%', background: c, border: strokeColor === c ? '3px solid #2563eb' : '1px solid #d1d5db', cursor: 'pointer' }} />
+                      ))}
+                    </div>
+                  </div>
+                  <div>
+                    <label style={{ fontSize: '0.75rem', fontWeight: 500, color: '#475569' }}>Thickness ({strokeWidth}px)</label>
+                    <input type="range" min="2" max="16" value={strokeWidth} onChange={(e) => { setStrokeWidth(Number(e.target.value)); setFontSize(Number(e.target.value) * 1.5 + 10); }} style={{ width: '100%', marginTop: 6 }} />
+                  </div>
+                </div>
+              )}
+            </div>
+            <div style={{ fontSize: '0.7rem', color: '#94a3b8', textAlign: 'center', paddingTop: 8 }}>{pages.length} page{pages.length > 1 ? 's' : ''}</div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Upload & Result screens use ToolPage with standard layout
   return (
     <ToolPage
       tool={tool}
@@ -992,681 +1329,7 @@ export const EditPDF: React.FC = () => {
       {error && <div className="message message-error">{error}</div>}
       {isProcessing && <ProcessingOverlay message="Loading PDF pages..." />}
       {isSaving && <ProcessingOverlay message="Exporting your edited PDF..." />}
-
-      {/* Rebuilt High-Fidelity Editor UI */}
-      {!isProcessing && !isSaving && !resultUrl && file && pages.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', height: '90vh', background: '#f8fafc', border: '1px solid #e2e8f0', borderRadius: 16, overflow: 'hidden' }}>
-          
-          {/* 1. Header Bar */}
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '12px 24px', background: 'white', borderBottom: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <div onClick={reset} style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 32, height: 32, borderRadius: '50%', background: '#f1f5f9', color: '#64748b' }}>
-                <X size={18} />
-              </div>
-              <div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <strong style={{ fontSize: '0.95rem', color: '#1e293b' }}>{file.name}</strong>
-                  <Cloud size={16} color="#10b981" />
-                </div>
-                <span style={{ fontSize: '0.75rem', color: '#64748b' }}>Saving locally</span>
-              </div>
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
-              <button className="btn btn-secondary" style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '8px 16px', borderRadius: 8, fontSize: '0.9rem' }}>
-                <Share2 size={16} /> Share
-              </button>
-              <button 
-                onClick={savePDF} 
-                className="btn btn-primary" 
-                style={{ 
-                  background: '#2563eb', 
-                  color: 'white', 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  gap: 8, 
-                  padding: '8px 20px', 
-                  borderRadius: 8, 
-                  fontSize: '0.9rem',
-                  fontWeight: 600,
-                  boxShadow: '0 4px 6px -1px rgba(37, 99, 235, 0.2)' 
-                }}
-              >
-                <Download size={16} /> Download
-              </button>
-            </div>
-          </div>
-
-          {/* 2. Top Toolbar Bar */}
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '8px 24px', background: 'white', borderBottom: '1px solid #e2e8f0' }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Sidebar toggle */}
-              <button 
-                onClick={() => setShowSidebar(!showSidebar)} 
-                style={{ border: 'none', padding: 8, borderRadius: 6, background: showSidebar ? '#f1f5f9' : 'transparent', color: '#475569', cursor: 'pointer' }}
-                title="Toggle Sidebar"
-              >
-                <Grid size={18} />
-              </button>
-
-              <div style={{ width: 1, height: 20, background: '#e2e8f0', margin: '0 8px' }} />
-
-              {/* Cursor / Select */}
-              <button 
-                onClick={() => { setActiveTool('select'); setSelectedId(null); }}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: activeTool === 'select' ? '#eff6ff' : 'transparent', color: activeTool === 'select' ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <MousePointer2 size={16} /> Select
-              </button>
-
-              {/* Edit Text */}
-              <button 
-                onClick={() => { setActiveTool('select'); setSelectedId(null); }}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: 'transparent', color: '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Award size={16} color="#f59e0b" /> Edit Text
-              </button>
-
-              {/* Add Text */}
-              <button 
-                onClick={() => { setActiveTool('text'); setSelectedId(null); }}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: activeTool === 'text' ? '#eff6ff' : 'transparent', color: activeTool === 'text' ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Type size={16} /> Text
-              </button>
-
-              {/* Pen tool */}
-              <button 
-                onClick={() => { setActiveTool('pen'); setSelectedId(null); }}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: activeTool === 'pen' ? '#eff6ff' : 'transparent', color: activeTool === 'pen' ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <PenTool size={16} /> Draw
-              </button>
-
-              {/* Highlighter */}
-              <button 
-                onClick={() => { setActiveTool('highlighter'); setSelectedId(null); }}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: activeTool === 'highlighter' ? '#eff6ff' : 'transparent', color: activeTool === 'highlighter' ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Highlighter size={16} /> Highlight
-              </button>
-
-              {/* Eraser */}
-              <button 
-                onClick={() => { setActiveTool('eraser'); setSelectedId(null); }}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: activeTool === 'eraser' ? '#eff6ff' : 'transparent', color: activeTool === 'eraser' ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Eraser size={16} /> Erase
-              </button>
-
-              {/* Shape tool dropdown / triggers */}
-              <button 
-                onClick={() => { setActiveTool('rect'); setSelectedId(null); }}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: activeTool === 'rect' ? '#eff6ff' : 'transparent', color: activeTool === 'rect' ? '#2563eb' : '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <Square size={16} /> Shape
-              </button>
-
-              {/* Add Image */}
-              <button 
-                onClick={triggerImageUpload}
-                style={{ border: 'none', padding: '6px 12px', borderRadius: 6, background: 'transparent', color: '#475569', cursor: 'pointer', fontWeight: 500, display: 'flex', alignItems: 'center', gap: 6 }}
-              >
-                <ImageIcon size={16} /> Image
-              </button>
-              <input type="file" ref={imageInputRef} onChange={handleImageUpload} accept="image/*" style={{ display: 'none' }} />
-            </div>
-
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              {/* Undo / Redo */}
-              <button 
-                onClick={undo} 
-                disabled={historyIndex <= 0}
-                style={{ border: 'none', padding: 8, borderRadius: 6, background: 'transparent', color: historyIndex > 0 ? '#475569' : '#cbd5e1', cursor: historyIndex > 0 ? 'pointer' : 'default' }}
-                title="Undo"
-              >
-                <Undo2 size={16} />
-              </button>
-              <button 
-                onClick={redo} 
-                disabled={historyIndex >= history.length - 1}
-                style={{ border: 'none', padding: 8, borderRadius: 6, background: 'transparent', color: historyIndex < history.length - 1 ? '#475569' : '#cbd5e1', cursor: historyIndex < history.length - 1 ? 'pointer' : 'default' }}
-                title="Redo"
-              >
-                <Redo2 size={16} />
-              </button>
-            </div>
-          </div>
-
-          {/* 3. Main Workspace Area */}
-          <div style={{ display: 'flex', flex: 1, overflow: 'hidden', background: '#f1f5f9' }}>
-            
-            {/* Sidebar Left: Page Navigation with Duplicate/Delete/Rotation */}
-            {showSidebar && (
-              <div 
-                style={{ 
-                  width: 220, 
-                  background: 'white', 
-                  borderRight: '1px solid #e2e8f0', 
-                  padding: 16, 
-                  overflowY: 'auto',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: 16
-                }}
-              >
-                {pages.map((pageState, idx) => (
-                  <div key={pageState.id} style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-                    <div 
-                      onClick={() => { setCurrentPage(idx + 1); setSelectedId(null); }}
-                      style={{
-                        position: 'relative',
-                        cursor: 'pointer',
-                        border: `2px solid ${currentPage === idx + 1 ? '#2563eb' : '#e2e8f0'}`,
-                        borderRadius: 8,
-                        padding: 4,
-                        background: 'white',
-                        transform: `rotate(${pageState.rotation}deg)`,
-                        transition: 'transform 0.2s, border-color 0.2s',
-                        width: 120,
-                        height: 150,
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: '0 4px 6px -1px rgba(0,0,0,0.05)'
-                      }}
-                    >
-                      {pageState.originalIndex !== null ? (
-                        <img 
-                          src={thumbnails[pageState.originalIndex]} 
-                          alt={`Page ${idx + 1}`} 
-                          style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: 4 }} 
-                        />
-                      ) : (
-                        <div style={{ width: '100%', height: '100%', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px dashed #cbd5e1', borderRadius: 4 }}>
-                          <span style={{ fontSize: '0.75rem', color: '#94a3b8' }}>Blank Page</span>
-                        </div>
-                      )}
-
-                      {/* Thumbnail action overlays on hover (always rendered but visible cleanly) */}
-                      <div 
-                        style={{
-                          position: 'absolute',
-                          bottom: 4,
-                          left: '50%',
-                          transform: 'translateX(-50%)',
-                          background: 'rgba(15, 23, 42, 0.85)',
-                          borderRadius: 6,
-                          padding: '2px 6px',
-                          display: 'flex',
-                          gap: 6,
-                          alignItems: 'center',
-                          zIndex: 10
-                        }}
-                        onClick={(e) => e.stopPropagation()}
-                      >
-                        {/* Duplicate */}
-                        <button onClick={() => duplicatePage(idx)} style={{ border: 'none', background: 'transparent', color: 'white', padding: 2, cursor: 'pointer' }} title="Duplicate Page">
-                          <Copy size={12} />
-                        </button>
-                        {/* Rotate */}
-                        <button onClick={() => rotatePage(idx)} style={{ border: 'none', background: 'transparent', color: 'white', padding: 2, cursor: 'pointer' }} title="Rotate Page">
-                          <RotateCw size={12} />
-                        </button>
-                        {/* Delete */}
-                        <button onClick={() => deletePage(idx)} style={{ border: 'none', background: 'transparent', color: 'white', padding: 2, cursor: 'pointer' }} title="Delete Page">
-                          <Trash2 size={12} />
-                        </button>
-                      </div>
-                    </div>
-                    <div style={{ fontSize: '0.8rem', marginTop: 8, fontWeight: currentPage === idx + 1 ? 600 : 400, color: currentPage === idx + 1 ? '#2563eb' : '#475569' }}>
-                      Page {idx + 1}
-                    </div>
-
-                    {/* Insert Page Button below thumbnail */}
-                    <button 
-                      onClick={() => insertBlankPage(idx)}
-                      style={{ 
-                        marginTop: 8, 
-                        border: '1px dashed #cbd5e1', 
-                        background: 'transparent', 
-                        color: '#94a3b8', 
-                        borderRadius: 6, 
-                        padding: '4px 12px', 
-                        fontSize: '0.75rem', 
-                        cursor: 'pointer',
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: 4
-                      }}
-                    >
-                      <Plus size={10} /> Add blank page
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            {/* Main Canvas Viewport (Center) */}
-            <div style={{ flex: 1, display: 'flex', flexDirection: 'column', overflow: 'auto', position: 'relative', outline: 'none' }} onKeyDown={handleKeyDown} tabIndex={0}>
-              <div 
-                style={{ 
-                  flex: 1, 
-                  display: 'flex', 
-                  alignItems: 'center', 
-                  justifyContent: 'center', 
-                  padding: 40 
-                }}
-              >
-                <div 
-                  ref={containerRef}
-                  onClick={handleOverlayClick}
-                  style={{ 
-                    position: 'relative', 
-                    boxShadow: '0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04)',
-                    width: canvasWidth,
-                    height: canvasHeight,
-                    cursor: activeTool === 'select' ? 'default' : (activeTool === 'text' ? 'text' : 'crosshair'),
-                    userSelect: 'none'
-                  }}
-                >
-                  <canvas ref={pdfCanvasRef} style={{ display: 'block', width: '100%', height: '100%', background: 'white' }} />
-
-                  <canvas 
-                    ref={drawingCanvasRef}
-                    onMouseDown={handleDrawingStart}
-                    onMouseMove={handleDrawingMove}
-                    onMouseUp={handleDrawingEnd}
-                    onMouseLeave={handleDrawingEnd}
-                    style={{ 
-                      position: 'absolute', 
-                      top: 0, 
-                      left: 0, 
-                      width: '100%', 
-                      height: '100%', 
-                      zIndex: (activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'eraser') ? 25 : 5,
-                      pointerEvents: (activeTool === 'pen' || activeTool === 'highlighter' || activeTool === 'eraser') ? 'auto' : 'none'
-                    }}
-                  />
-
-                  {/* SVG overlay elements for text, shapes, images */}
-                  <div 
-                    style={{
-                      position: 'absolute',
-                      top: 0,
-                      left: 0,
-                      width: '100%',
-                      height: '100%',
-                      zIndex: 15,
-                      pointerEvents: activeTool === 'select' ? 'auto' : 'none'
-                    }}
-                  >
-                    {pages.length > 0 && annotations.filter(ann => ann.pageId === pages[currentPage - 1]?.id).map(ann => {
-                      const isSelected = ann.id === selectedId;
-                      const isEditing = ann.id === editingId;
-
-                      return (
-                        <div
-                          key={ann.id}
-                          onMouseDown={(e) => startDrag(e, ann)}
-                          onDoubleClick={(e) => {
-                            if (ann.type === 'text') {
-                              e.stopPropagation();
-                              setEditingId(ann.id);
-                            }
-                          }}
-                          style={{
-                            position: 'absolute',
-                            left: `${ann.x}%`,
-                            top: `${ann.y}%`,
-                            width: `${ann.width}%`,
-                            height: `${ann.height}%`,
-                            border: isSelected ? '2px dashed #2563eb' : '1px transparent solid',
-                            boxSizing: 'border-box',
-                            cursor: activeTool === 'select' ? 'move' : 'inherit',
-                            pointerEvents: 'auto'
-                          }}
-                        >
-                          {ann.type === 'text' && (
-                            <div 
-                              style={{ 
-                                width: '100%', 
-                                height: '100%', 
-                                color: ann.color, 
-                                fontSize: ann.fontSize * scale,
-                                background: ann.bgColor,
-                                border: ann.borderWidth > 0 ? `${ann.borderWidth}px solid ${ann.borderColor}` : 'none',
-                                padding: 4,
-                                boxSizing: 'border-box',
-                                overflow: 'hidden',
-                                wordBreak: 'break-word',
-                                fontFamily: 'sans-serif'
-                              }}
-                            >
-                              {isEditing ? (
-                                <textarea
-                                  value={ann.text}
-                                  onChange={(e) => updateSelectedProperty('text', e.target.value)}
-                                  onBlur={() => setEditingId(null)}
-                                  autoFocus
-                                  style={{
-                                    width: '100%',
-                                    height: '100%',
-                                    color: ann.color,
-                                    fontSize: ann.fontSize * scale,
-                                    background: 'transparent',
-                                    border: 'none',
-                                    outline: 'none',
-                                    resize: 'none',
-                                    padding: 0,
-                                    margin: 0,
-                                    fontFamily: 'sans-serif'
-                                  }}
-                                />
-                              ) : (
-                                ann.text
-                              )}
-                            </div>
-                          )}
-
-                          {ann.type === 'shape' && (
-                            <div style={{ width: '100%', height: '100%' }}>
-                              {ann.shapeType === 'rect' && (
-                                <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-                                  <rect 
-                                    x={ann.strokeWidth / 2} 
-                                    y={ann.strokeWidth / 2} 
-                                    width={`calc(100% - ${ann.strokeWidth}px)`}
-                                    height={`calc(100% - ${ann.strokeWidth}px)`}
-                                    stroke={ann.strokeColor} 
-                                    strokeWidth={ann.strokeWidth} 
-                                    fill={ann.fillColor} 
-                                  />
-                                </svg>
-                              )}
-                              {ann.shapeType === 'circle' && (
-                                <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-                                  <ellipse 
-                                    cx="50%" 
-                                    cy="50%" 
-                                    rx={`calc(50% - ${ann.strokeWidth / 2}px)`}
-                                    ry={`calc(50% - ${ann.strokeWidth / 2}px)`}
-                                    stroke={ann.strokeColor} 
-                                    strokeWidth={ann.strokeWidth} 
-                                    fill={ann.fillColor} 
-                                  />
-                                </svg>
-                              )}
-                              {ann.shapeType === 'line' && (
-                                <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-                                  <line 
-                                    x1="0" 
-                                    y1="100%" 
-                                    x2="100%" 
-                                    y2="0" 
-                                    stroke={ann.strokeColor} 
-                                    strokeWidth={ann.strokeWidth} 
-                                  />
-                                </svg>
-                              )}
-                              {ann.shapeType === 'arrow' && (
-                                <svg width="100%" height="100%" style={{ overflow: 'visible' }}>
-                                  <line 
-                                    x1="0" 
-                                    y1="100%" 
-                                    x2="100%" 
-                                    y2="0" 
-                                    stroke={ann.strokeColor} 
-                                    strokeWidth={ann.strokeWidth}
-                                    markerEnd="url(#arrow-marker)" 
-                                  />
-                                </svg>
-                              )}
-                            </div>
-                          )}
-
-                          {ann.type === 'image' && (
-                            <img 
-                              src={ann.dataUrl} 
-                              alt="Uploaded insertion" 
-                              style={{ width: '100%', height: '100%', objectFit: 'fill' }} 
-                            />
-                          )}
-
-                          {/* Resizing handles */}
-                          {isSelected && !isEditing && (
-                            <>
-                              <div onMouseDown={(e) => startResize(e, ann, 'tl')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', left: -4, top: -4, cursor: 'nwse-resize', zIndex: 10 }} />
-                              <div onMouseDown={(e) => startResize(e, ann, 'tr')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', right: -4, top: -4, cursor: 'nesw-resize', zIndex: 10 }} />
-                              <div onMouseDown={(e) => startResize(e, ann, 'bl')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', left: -4, bottom: -4, cursor: 'nesw-resize', zIndex: 10 }} />
-                              <div onMouseDown={(e) => startResize(e, ann, 'br')} style={{ position: 'absolute', width: 8, height: 8, background: '#2563eb', right: -4, bottom: -4, cursor: 'nwse-resize', zIndex: 10 }} />
-                            </>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                </div>
-              </div>
-
-              {/* Bottom Floating Page & Zoom Control Overlay */}
-              <div 
-                style={{
-                  position: 'absolute',
-                  bottom: 24,
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  background: 'rgba(15, 23, 42, 0.85)',
-                  backdropFilter: 'blur(8px)',
-                  borderRadius: 9999,
-                  padding: '6px 16px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: 16,
-                  color: 'white',
-                  boxShadow: '0 10px 15px -3px rgba(0,0,0,0.3)',
-                  zIndex: 30
-                }}
-              >
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button 
-                    disabled={currentPage <= 1} 
-                    onClick={() => { setCurrentPage(p => p - 1); setSelectedId(null); }}
-                    style={{ border: 'none', background: 'transparent', color: currentPage > 1 ? 'white' : '#64748b', cursor: currentPage > 1 ? 'pointer' : 'default', padding: 4 }}
-                  >
-                    <ChevronLeft size={16} />
-                  </button>
-                  <span style={{ fontSize: '0.85rem', minWidth: 60, textAlign: 'center' }}>
-                    {currentPage} / {pages.length}
-                  </span>
-                  <button 
-                    disabled={currentPage >= pages.length} 
-                    onClick={() => { setCurrentPage(p => p + 1); setSelectedId(null); }}
-                    style={{ border: 'none', background: 'transparent', color: currentPage < pages.length ? 'white' : '#64748b', cursor: currentPage < pages.length ? 'pointer' : 'default', padding: 4 }}
-                  >
-                    <ChevronRight size={16} />
-                  </button>
-                </div>
-                
-                <div style={{ width: 1, height: 16, background: '#475569' }} />
-
-                <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                  <button onClick={() => setScale(s => Math.max(0.5, s - 0.1))} style={{ border: 'none', background: 'transparent', color: 'white', cursor: 'pointer', padding: 4 }}>
-                    <ZoomOut size={16} />
-                  </button>
-                  <span style={{ fontSize: '0.8rem', minWidth: 36, textAlign: 'center' }}>{Math.round(scale * 100)}%</span>
-                  <button onClick={() => setScale(s => Math.min(2.0, s + 0.1))} style={{ border: 'none', background: 'transparent', color: 'white', cursor: 'pointer', padding: 4 }}>
-                    <ZoomIn size={16} />
-                  </button>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar Right: Active Property Controller */}
-            <div 
-              style={{ 
-                width: 240, 
-                background: 'white', 
-                borderLeft: '1px solid #e2e8f0', 
-                padding: 16, 
-                display: 'flex', 
-                flexDirection: 'column', 
-                justifyContent: 'space-between' 
-              }}
-            >
-              <div>
-                <h3 style={{ fontSize: '0.9rem', fontWeight: 600, color: '#334155', marginBottom: 16 }}>Properties</h3>
-
-                {selectedAnnotation ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 500, color: '#64748b' }}>Selected:</span>
-                      <span style={{ fontSize: '0.8rem', fontWeight: 600, color: '#1e293b', textTransform: 'capitalize' }}>
-                        {selectedAnnotation.type === 'shape' ? (selectedAnnotation as ShapeAnnotation).shapeType : selectedAnnotation.type}
-                      </span>
-                    </div>
-
-                    {(selectedAnnotation.type === 'text' || selectedAnnotation.type === 'shape') && (
-                      <div className="input-group">
-                        <label className="input-label" style={{ fontSize: '0.8rem', fontWeight: 500 }}>Color</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
-                          {PALETTE_COLORS.filter(c => c !== 'transparent').map(c => (
-                            <button
-                              key={c}
-                              onClick={() => updateSelectedProperty(selectedAnnotation.type === 'text' ? 'color' : 'strokeColor', c)}
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: '50%',
-                                background: c,
-                                border: (selectedAnnotation.type === 'text' ? (selectedAnnotation as TextAnnotation).color : (selectedAnnotation as ShapeAnnotation).strokeColor) === c ? '3px solid #2563eb' : '1px solid #cbd5e1',
-                                cursor: 'pointer'
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {(selectedAnnotation.type === 'text' || (selectedAnnotation.type === 'shape' && (selectedAnnotation as ShapeAnnotation).shapeType !== 'line' && (selectedAnnotation as ShapeAnnotation).shapeType !== 'arrow')) && (
-                      <div className="input-group">
-                        <label className="input-label" style={{ fontSize: '0.8rem', fontWeight: 500 }}>Background / Fill</label>
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
-                          {PALETTE_COLORS.map(c => (
-                            <button
-                              key={c}
-                              onClick={() => updateSelectedProperty(selectedAnnotation.type === 'text' ? 'bgColor' : 'fillColor', c)}
-                              style={{
-                                width: 24,
-                                height: 24,
-                                borderRadius: '50%',
-                                background: c === 'transparent' ? 'linear-gradient(45deg, #ccc 25%, transparent 25%), linear-gradient(-45deg, #ccc 25%, transparent 25%), linear-gradient(45deg, transparent 75%, #ccc 75%), linear-gradient(-45deg, transparent 75%, #ccc 75%)' : c,
-                                backgroundSize: c === 'transparent' ? '6px 6px' : 'auto',
-                                backgroundColor: c === 'transparent' ? 'white' : 'transparent',
-                                border: (selectedAnnotation.type === 'text' ? (selectedAnnotation as TextAnnotation).bgColor : (selectedAnnotation as ShapeAnnotation).fillColor) === c ? '3px solid #2563eb' : '1px solid #cbd5e1',
-                                cursor: 'pointer'
-                              }}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    )}
-
-                    {selectedAnnotation.type === 'text' && (
-                      <div className="input-group">
-                        <label className="input-label" style={{ fontSize: '0.8rem', fontWeight: 500 }}>Font Size ({(selectedAnnotation as TextAnnotation).fontSize}px)</label>
-                        <input
-                          type="range"
-                          min="10"
-                          max="48"
-                          value={(selectedAnnotation as TextAnnotation).fontSize}
-                          onChange={(e) => updateSelectedProperty('fontSize', Number(e.target.value))}
-                          className="range-slider"
-                          style={{ marginTop: 8 }}
-                        />
-                      </div>
-                    )}
-
-                    {selectedAnnotation.type === 'shape' && (
-                      <div className="input-group">
-                        <label className="input-label" style={{ fontSize: '0.8rem', fontWeight: 500 }}>Thickness ({(selectedAnnotation as ShapeAnnotation).strokeWidth}px)</label>
-                        <input
-                          type="range"
-                          min="1"
-                          max="12"
-                          value={(selectedAnnotation as ShapeAnnotation).strokeWidth}
-                          onChange={(e) => updateSelectedProperty('strokeWidth', Number(e.target.value))}
-                          className="range-slider"
-                          style={{ marginTop: 8 }}
-                        />
-                      </div>
-                    )}
-
-                    <button
-                      className="btn btn-danger btn-full"
-                      onClick={deleteSelected}
-                      style={{ background: '#ef4444', color: 'white', marginTop: 8 }}
-                    >
-                      <Trash2 size={14} /> Delete Object
-                    </button>
-                  </div>
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-                    <p style={{ fontSize: '0.8rem', color: '#64748b' }}>
-                      {activeTool === 'pen' || activeTool === 'highlighter' 
-                        ? 'Configure Pen/Highlighter styles below:' 
-                        : 'Select any added element on the canvas to configure colors, sizes, or to delete it.'}
-                    </p>
-
-                    <div className="input-group">
-                      <label className="input-label" style={{ fontSize: '0.8rem', fontWeight: 500 }}>Stroke Color</label>
-                      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: 8, marginTop: 8 }}>
-                        {PALETTE_COLORS.filter(c => c !== 'transparent').map(c => (
-                          <button
-                            key={c}
-                            onClick={() => setStrokeColor(c)}
-                            style={{
-                              width: 24,
-                              height: 24,
-                              borderRadius: '50%',
-                              background: c,
-                              border: strokeColor === c ? '3px solid #2563eb' : '1px solid #cbd5e1',
-                              cursor: 'pointer'
-                            }}
-                          />
-                        ))}
-                      </div>
-                    </div>
-
-                    <div className="input-group">
-                      <label className="input-label" style={{ fontSize: '0.8rem', fontWeight: 500 }}>Thickness ({strokeWidth}px)</label>
-                      <input
-                        type="range"
-                        min="2"
-                        max="16"
-                        value={strokeWidth}
-                        onChange={(e) => {
-                          setStrokeWidth(Number(e.target.value));
-                          setFontSize(Number(e.target.value) * 1.5 + 10);
-                        }}
-                        className="range-slider"
-                        style={{ marginTop: 8 }}
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-                <div style={{ fontSize: '0.75rem', color: '#64748b', textAlign: 'center' }}>
-                  Total {pages.length} Pages
-                </div>
-              </div>
-            </div>
-
-          </div>
-        </div>
-      )}
     </ToolPage>
   );
 };
+

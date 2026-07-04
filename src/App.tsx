@@ -66,6 +66,9 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
+        {/* Full-screen editor — rendered outside MainLayout */}
+        <Route path="tool/edit-pdf" element={<EditPDF />} />
+
         <Route path="/" element={<MainLayout />}>
           <Route index element={<HomePage />} />
           
@@ -83,7 +86,7 @@ export default function App() {
           <Route path="tool/html-to-pdf" element={<HTMLToPDF />} />
           
           {/* Edit & View Tools */}
-          <Route path="tool/edit-pdf" element={<EditPDF />} />
+          {/* edit-pdf route is above, outside MainLayout for full-screen mode */}
           <Route path="tool/add-page-numbers" element={<AddPageNumbers />} />
           <Route path="tool/add-watermark" element={<AddWatermark />} />
           <Route path="tool/pdf-reader" element={<PDFReader />} />
