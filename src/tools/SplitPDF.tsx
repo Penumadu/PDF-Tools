@@ -57,11 +57,11 @@ export const SplitPDF: React.FC = () => {
   };
 
   const togglePageSelection = (index: number) => {
-    setPages(prev => {
-      const newPages = [...prev];
-      newPages[index].selected = !newPages[index].selected;
-      return newPages;
-    });
+    console.log('togglePageSelection called for index:', index);
+    setPages(prev => prev.map((p, idx) => {
+      if (idx !== index) return p;
+      return { ...p, selected: !p.selected };
+    }));
   };
 
   const selectAll = () => setPages(prev => prev.map(p => ({ ...p, selected: true })));

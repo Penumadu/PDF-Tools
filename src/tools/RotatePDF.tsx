@@ -62,17 +62,14 @@ export const RotatePDF: React.FC = () => {
   };
 
   const rotatePage = (index: number, direction: 'cw' | 'ccw') => {
-    setPages(prev => {
-      const newPages = [...prev];
-      let currentRotation = newPages[index].rotation;
-      if (direction === 'cw') {
-        currentRotation = (currentRotation + 90) % 360;
-      } else {
-        currentRotation = (currentRotation - 90 + 360) % 360;
-      }
-      newPages[index].rotation = currentRotation;
-      return newPages;
-    });
+    setPages(prev => prev.map((p, idx) => {
+      if (idx !== index) return p;
+      const currentRotation = p.rotation;
+      const newRotation = direction === 'cw' 
+        ? (currentRotation + 90) % 360 
+        : (currentRotation - 90 + 360) % 360;
+      return { ...p, rotation: newRotation };
+    }));
   };
 
   const rotateAll = (direction: 'cw' | 'ccw') => {

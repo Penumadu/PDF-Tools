@@ -53,11 +53,10 @@ export const DeletePages: React.FC = () => {
   };
 
   const toggleDelete = (index: number) => {
-    setPages(prev => {
-      const newPages = [...prev];
-      newPages[index].deleted = !newPages[index].deleted;
-      return newPages;
-    });
+    setPages(prev => prev.map((p, idx) => {
+      if (idx !== index) return p;
+      return { ...p, deleted: !p.deleted };
+    }));
   };
 
   const applyDeletions = async () => {
