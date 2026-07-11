@@ -1,16 +1,17 @@
 import React, { useState } from 'react';
-import { PDFDocument } from 'pdf-lib';
+import { PDFDocument, degrees } from 'pdf-lib';
 import { ToolPage } from '../components/ToolPage';
 import { DropZone } from '../components/DropZone';
 import { ProcessingOverlay } from '../components/ProcessingOverlay';
 import { getToolBySlug } from '../data/tools';
 import { loadPDFDocument, loadPDFForRendering, generateThumbnail } from '../utils/pdfUtils';
-import { GripHorizontal, X } from 'lucide-react';
+import { GripHorizontal, RotateCw, Trash2, ArrowLeft, ArrowRight, X } from 'lucide-react';
 
 interface PageInfo {
   id: string;
   originalIndex: number;
   thumbnailUrl: string | null;
+  rotation: number;
 }
 
 export const OrganizePages: React.FC = () => {
@@ -41,7 +42,12 @@ export const OrganizePages: React.FC = () => {
 
       for (let i = 1; i <= numPages; i++) {
         const thumbnailUrl = await generateThumbnail(pdfProxy, i);
-        pagesData.push({ id: `page-${i}`, originalIndex: i - 1, thumbnailUrl });
+        pagesData.push({ 
+          id: `page-${i}-${Math.random().toString(36).substring(7)}`, 
+          originalIndex: i - 1, 
+          thumbnailUrl,
+          rotation: 0
+        });
       }
 
       setPages(pagesData);
@@ -54,16 +60,20 @@ export const OrganizePages: React.FC = () => {
     }
   };
 
+  // Drag-and-drop logic
   const handleDragStart = (e: React.DragEvent, index: number) => {
     setDraggedItemIndex(index);
     e.dataTransfer.effectAllowed = 'move';
-    // Transparent drag image
     const img = new Image();
     img.src = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7';
     e.dataTransfer.setDragImage(img, 0, 0);
   };
 
   const handleDragOver = (e: React.DragEvent, index: number) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (e: React.DragEvent, index: number) => {
     e.preventDefault();
     if (draggedItemIndex === null || draggedItemIndex === index) return;
 
@@ -72,13 +82,52 @@ export const OrganizePages: React.FC = () => {
       const draggedItem = newPages[draggedItemIndex];
       newPages.splice(draggedItemIndex, 1);
       newPages.splice(index, 0, draggedItem);
-      setDraggedItemIndex(index); // Update dragged index so it follows
       return newPages;
     });
+    setDraggedItemIndex(null);
   };
 
   const handleDragEnd = () => {
     setDraggedItemIndex(null);
+  };
+
+  // Page manipulation actions
+  const moveLeft = (index: number) => {
+    if (index === 0) return;
+    setPages(prev => {
+      const newPages = [...prev];
+      const temp = newPages[index - 1];
+      newPages[index - 1] = newPages[index];
+      newPages[index] = temp;
+      return newPages;
+    });
+  };
+
+  const moveRight = (index: number) => {
+    if (index === pages.length - 1) return;
+    setPages(prev => {
+      const newPages = [...prev];
+      const temp = newPages[index + 1];
+      newPages[index + 1] = newPages[index];
+      newPages[index] = temp;
+      return newPages;
+    });
+  };
+
+  const rotatePage = (index: number) => {
+    setPages(prev => prev.map((p, idx) => {
+      if (idx !== index) return p;
+      return { ...p, rotation: (p.rotation + 90) % 360 };
+    }));
+  };
+
+  const deletePage = (index: number) => {
+    if (pages.length <= 1) {
+      setError('You must keep at least one page in the document.');
+      return;
+    }
+    setPages(prev => prev.filter((_, idx) => idx !== index));
+    setError(null);
   };
 
   const applyOrder = async () => {
@@ -90,16 +139,23 @@ export const OrganizePages: React.FC = () => {
       const originalPdf = await loadPDFDocument(file);
       const newPdf = await PDFDocument.create();
       
-      const newIndices = pages.map(p => p.originalIndex);
-      const copiedPages = await newPdf.copyPages(originalPdf, newIndices);
-      copiedPages.forEach(page => newPdf.addPage(page));
+      const indices = pages.map(p => p.originalIndex);
+      const copiedPages = await newPdf.copyPages(originalPdf, indices);
+
+      copiedPages.forEach((page, index) => {
+        const rotationAngle = pages[index].rotation;
+        if (rotationAngle) {
+          page.setRotation(degrees(rotationAngle));
+        }
+        newPdf.addPage(page);
+      });
       
       const newPdfBytes = await newPdf.save();
       const blob = new Blob([newPdfBytes as any], { type: 'application/pdf' });
       setResultUrl(URL.createObjectURL(blob));
     } catch (err) {
       console.error(err);
-      setError('Failed to reorder pages.');
+      setError('Failed to organize pages.');
     } finally {
       setIsSaving(false);
     }
@@ -125,7 +181,7 @@ export const OrganizePages: React.FC = () => {
           onFiles={handleFiles}
           multiple={false}
           label="Drop PDF here to organize pages"
-          sublabel="Drag and drop pages to reorder them"
+          sublabel="Reorder, rotate, or delete pages to restructure your PDF"
           color={tool.color}
           colorLight={tool.colorLight}
         />
@@ -133,7 +189,7 @@ export const OrganizePages: React.FC = () => {
 
       {error && <div className="message message-error">{error}</div>}
       {isProcessing && <ProcessingOverlay message="Loading pages..." />}
-      {isSaving && <ProcessingOverlay message="Applying new order..." />}
+      {isSaving && <ProcessingOverlay message="Applying changes and saving PDF..." />}
 
       {!isProcessing && !isSaving && !resultUrl && file && pages.length > 0 && (
         <>
@@ -146,9 +202,9 @@ export const OrganizePages: React.FC = () => {
                 </button>
               </div>
               <div style={{ textAlign: 'center' }}>
-                <p style={{ marginBottom: 16 }}>Drag and drop pages to rearrange them.</p>
+                <p style={{ marginBottom: 12, fontSize: '0.9rem', color: '#64748b' }}>Drag pages, or use helper buttons to rotate, reorder and delete pages.</p>
                 <button className="btn btn-primary btn-lg" onClick={applyOrder} style={{ background: tool.color }}>
-                  Apply Changes
+                  Apply & Save PDF
                 </button>
               </div>
             </div>
@@ -162,17 +218,74 @@ export const OrganizePages: React.FC = () => {
                 draggable
                 onDragStart={(e) => handleDragStart(e, index)}
                 onDragOver={(e) => handleDragOver(e, index)}
+                onDrop={(e) => handleDrop(e, index)}
                 onDragEnd={handleDragEnd}
                 style={{ 
                   cursor: 'grab', 
-                  opacity: draggedItemIndex === index ? 0.5 : 1,
-                  transform: draggedItemIndex === index ? 'scale(1.05)' : 'none'
+                  opacity: draggedItemIndex === index ? 0.3 : 1,
+                  transform: draggedItemIndex === index ? 'scale(1.05)' : 'none',
+                  border: draggedItemIndex === index ? '2px dashed var(--brand-primary)' : '2px solid var(--border-light)',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  justifyContent: 'space-between',
+                  padding: '8px'
                 }}
               >
-                {page.thumbnailUrl && <img src={page.thumbnailUrl} alt={`Page ${index + 1}`} style={{ pointerEvents: 'none' }} />}
-                <div className="page-thumbnail-number">{index + 1}</div>
-                <div className="page-thumbnail-rotate" style={{ opacity: 1, cursor: 'grab' }}>
-                  <GripHorizontal size={14} />
+                <div style={{ position: 'relative', flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', overflow: 'hidden', height: 140 }}>
+                  {page.thumbnailUrl && (
+                    <img 
+                      src={page.thumbnailUrl} 
+                      alt={`Page ${index + 1}`} 
+                      style={{ 
+                        maxWidth: '100%', 
+                        maxHeight: '100%', 
+                        objectFit: 'contain',
+                        transform: `rotate(${page.rotation}deg)`,
+                        transition: 'transform 0.2s',
+                        pointerEvents: 'none'
+                      }} 
+                    />
+                  )}
+                  <div className="page-thumbnail-number" style={{ bottom: 4 }}>{index + 1}</div>
+                </div>
+
+                {/* Manual action toolbar on hover/bottom */}
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 8, borderTop: '1px solid #f1f5f9', paddingTop: 6 }}>
+                  <div style={{ display: 'flex', gap: 4 }}>
+                    <button 
+                      onClick={() => moveLeft(index)} 
+                      disabled={index === 0} 
+                      style={{ border: 'none', background: 'transparent', cursor: index === 0 ? 'default' : 'pointer', color: index === 0 ? '#cbd5e1' : '#64748b' }}
+                      title="Move Left"
+                    >
+                      <ArrowLeft size={13} />
+                    </button>
+                    <button 
+                      onClick={() => moveRight(index)} 
+                      disabled={index === pages.length - 1} 
+                      style={{ border: 'none', background: 'transparent', cursor: index === pages.length - 1 ? 'default' : 'pointer', color: index === pages.length - 1 ? '#cbd5e1' : '#64748b' }}
+                      title="Move Right"
+                    >
+                      <ArrowRight size={13} />
+                    </button>
+                  </div>
+                  
+                  <div style={{ display: 'flex', gap: 6 }}>
+                    <button 
+                      onClick={() => rotatePage(index)} 
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#64748b' }}
+                      title="Rotate Page"
+                    >
+                      <RotateCw size={13} />
+                    </button>
+                    <button 
+                      onClick={() => deletePage(index)} 
+                      style={{ border: 'none', background: 'transparent', cursor: 'pointer', color: '#ef4444' }}
+                      title="Delete Page"
+                    >
+                      <Trash2 size={13} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
